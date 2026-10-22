@@ -21,7 +21,9 @@ import {
   Check,
   Zap,
   Send,
-  BookOpen
+  BookOpen,
+  Shield,
+  Wallet
 } from 'lucide-react';
 import RankBadge from '@/components/common/RankBadge';
 import TrustScoreBadge from '@/components/common/TrustScoreBadge';
@@ -136,6 +138,91 @@ export default function TeacherDashboardPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ======================================================== */}
+        {/* QUICK HUB NAVIGATION CARDS                               */}
+        {/* ======================================================== */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href="/teacher/courses"
+            className="p-5 rounded-2xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 hover:border-emerald-500/50 transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                Teaching Batches
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Manage seats, curriculum &amp; Google Meet
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/teacher/wallet"
+            className="p-5 rounded-2xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 hover:border-amber-500/50 transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Coins className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-sm text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                Teacher Financial Vault
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                ₹{(studentProfile?.zeniBalance || 0).toLocaleString()} ZENI • 85% Royalties
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/teacher/guild"
+            className="p-5 rounded-2xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 hover:border-purple-500/50 transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Shield className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-purple-500 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-sm text-slate-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                Collegiate Guild Hub
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Multi-sig agency &amp; quorum governance
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/teacher/mentorship"
+            className="p-5 rounded-2xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 hover:border-blue-500/50 transition-all group shadow-sm flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-sm text-slate-900 dark:text-white group-hover:text-blue-500 transition-colors">
+                Mentorship &amp; Reviews
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Peer reviews &amp; +50 MANA XP rewards
+              </p>
+            </div>
+          </Link>
         </section>
 
         {/* ======================================================== */}

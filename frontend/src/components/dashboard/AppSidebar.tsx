@@ -44,7 +44,7 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const isCompanyArea = currentPath.startsWith('/company');
   const isAdminArea = currentPath.startsWith('/admin');
 
-  // Student Links (Section 9 & 41)
+  // Student Links (Audited per SIH specifications)
   const studentLinks = [
     { label: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
     { label: 'Tasks & Proofs', href: '/student/tasks', icon: CheckSquare },
@@ -53,11 +53,6 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     { label: 'Guild Hub', href: '/student/guild', icon: Shield },
     { label: 'Projects & Workspaces', href: '/student/projects', icon: FolderGit2 },
     { label: 'Wallet & Ledger', href: '/student/wallet', icon: Wallet },
-    { label: 'MANA XP', href: '/wallet/mana', icon: Flame },
-    { label: 'Rank Progression', href: '/student/rank', icon: Trophy },
-    { label: 'Student Profile', href: '/student/profile', icon: User },
-    { label: 'Course Chat / Messages', href: '/student/messages', icon: MessageSquare },
-    { label: 'Notifications', href: '/student/notifications', icon: Bell },
   ];
 
   // Teacher Links (Rank D+)
@@ -66,6 +61,8 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     { label: 'Manage Courses', href: '/teacher/courses', icon: GraduationCap },
     { label: 'Create New Course', href: '/teacher/courses/new', icon: PlusCircle },
     { label: 'Teacher Wallet', href: '/teacher/wallet', icon: Wallet },
+    { label: 'Guild Hub', href: '/teacher/guild', icon: Shield },
+    { label: 'Mentorship & Reviews', href: '/teacher/mentorship', icon: Users },
   ];
 
   // Mentor Links (Rank C+)
@@ -157,7 +154,14 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {currentLinks.map((link) => {
             const Icon = link.icon;
-            const isActive = pathname === link.href;
+            const isActive =
+              pathname === link.href ||
+              (link.href !== '/teacher/dashboard' &&
+                link.href !== '/student/dashboard' &&
+                link.href !== '/company/dashboard' &&
+                link.href !== '/admin/dashboard' &&
+                link.href !== '/mentor/dashboard' &&
+                pathname?.startsWith(link.href + '/'));
             return (
               <Link
                 key={link.href}
@@ -299,6 +303,16 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-mono font-bold">
                       C+
                     </span>
+                  </Link>
+                )}
+                {isTeacherArea && (
+                  <Link
+                    href="/student/dashboard"
+                    onClick={onClose}
+                    className="flex items-center justify-between p-2 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 bg-white dark:bg-[#111333]/80 hover:bg-slate-100 dark:hover:bg-white/10 text-[11px] transition-colors"
+                  >
+                    <span>Switch to Student Hub</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   </Link>
                 )}
               </div>

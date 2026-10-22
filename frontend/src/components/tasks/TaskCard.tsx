@@ -12,12 +12,17 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task }: TaskCardProps) {
-  const { studentProfile, submitTask } = useUniStore();
+  const { studentProfile, submitTask, submissions, currentUser } = useUniStore();
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submissionType, setSubmissionType] = useState<SubmissionType>('GITHUB');
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Check if student has already submitted proof for this task
+  const mySubmission = submissions?.find(
+    (s) => s.taskId === task.id && s.studentId === currentUser?.id
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,15 +39,15 @@ export default function TaskCard({ task }: TaskCardProps) {
   };
 
   return (
-    <div className="glass-card rounded-2xl p-5 border border-border flex flex-col justify-between hover:border-primary/50 transition-all duration-300 group">
+    <div className="rounded-2xl p-5 bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 flex flex-col justify-between hover:border-purple-500/50 dark:hover:border-purple-400/40 shadow-sm hover:shadow-md transition-all duration-300 group">
       <div>
         {/* Header Tags */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-medium border border-border">
+            <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-semibold border border-purple-200 dark:border-purple-800/40">
               {task.category}
             </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/5">
               {task.difficulty}
             </span>
           </div>
@@ -50,17 +55,20 @@ export default function TaskCard({ task }: TaskCardProps) {
         </div>
 
         {/* Title & Description */}
-        <h4 className="text-base font-bold text-foreground group-hover:text-accent transition-colors line-clamp-2 mb-2">
+        <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2 mb-2">
           {task.title}
         </h4>
-        <p className="text-xs text-muted-foreground line-clamp-3 mb-4 leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 mb-4 leading-relaxed">
           {task.description}
         </p>
 
         {/* Required Skills */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {task.requiredSkills.map((skill) => (
-            <span key={skill} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-border/40 font-mono">
+            <span
+              key={skill}
+              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-mono"
+            >
               {skill}
             </span>
           ))}
@@ -68,36 +76,57 @@ export default function TaskCard({ task }: TaskCardProps) {
       </div>
 
       {/* Footer Rewards & Action */}
-      <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+      <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 text-xs font-mono">
           <div className="flex items-center gap-1 text-purple-700 dark:text-purple-300 font-bold" title="MANA XP reward">
             <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
             <span>+{task.manaReward}</span>
-            <span className="text-[10px] text-purple-600/80 dark:text-purple-400/70 font-sans">MANA</span>
+            <span className="text-[10px] text-purple-600/80 dark:text-purple-400/70 font-sans">XP</span>
           </div>
 
           {task.zeniReward > 0 && (
-            <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-bold" title="Paid task ZENI reward">
-              <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold" title="Paid task ZENI reward">
+              <Coins className="w-3.5 h-3.5 text-amber-500" />
               <span>₹{task.zeniReward}</span>
-              <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/70 font-sans">ZENI</span>
+              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/70 font-sans">ZENI</span>
             </div>
           )}
         </div>
 
-        <button
-          onClick={() => setShowSubmitModal(true)}
-          className="px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary dark:bg-primary/20 text-primary dark:text-foreground hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/40"
-        >
-          <span>Submit Proof</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
+        {mySubmission ? (
+          mySubmission.status === 'APPROVED' ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[10px] font-mono font-bold">
+              <CheckCircle className="w-3 h-3" />
+              <span>Approved</span>
+            </span>
+          ) : mySubmission.status === 'PENDING' || mySubmission.status === 'UNDER_REVIEW' ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 text-[10px] font-mono font-bold">
+              <Clock className="w-3 h-3" />
+              <span>Under Review</span>
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowSubmitModal(true)}
+              className="px-2.5 py-1 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 text-[10px] font-mono font-bold hover:bg-rose-100 transition-colors"
+            >
+              Resubmit
+            </button>
+          )
+        ) : (
+          <button
+            onClick={() => setShowSubmitModal(true)}
+            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <span>Submit Proof</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* Proof Submission Modal */}
       {showSubmitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="max-w-lg w-full glass-card rounded-2xl p-6 border border-primary/40 shadow-2xl space-y-4">
+          <div className="max-w-lg w-full rounded-3xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-accent">

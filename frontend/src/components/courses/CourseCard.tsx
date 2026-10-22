@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Course } from '@/lib/types';
 import RankBadge from '@/components/common/RankBadge';
 import TrustScoreBadge from '@/components/common/TrustScoreBadge';
@@ -15,7 +16,8 @@ import {
   PlusCircle,
   CheckCircle,
   AlertTriangle,
-  Lock
+  Lock,
+  GraduationCap
 } from 'lucide-react';
 
 interface CourseCardProps {
@@ -23,6 +25,8 @@ interface CourseCardProps {
 }
 
 export default function CourseCard({ course }: CourseCardProps) {
+  const pathname = usePathname();
+  const currentPath = pathname || '';
   const { currentUser, studentProfile, enrollInCourse, upgradeCourseCapacity, isStudentEnrolled } = useUniStore();
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -30,6 +34,8 @@ export default function CourseCard({ course }: CourseCardProps) {
 
   const enrolled = isStudentEnrolled(course.id, currentUser.id);
   const isTeacher = course.teacherId === currentUser.id;
+  const isTeacherContext = currentPath.startsWith('/teacher') || isTeacher;
+  const courseDetailUrl = isTeacherContext ? `/teacher/courses/${course.id}` : `/student/courses/${course.id}`;
   const isFull = course.enrolledCount >= course.batchCapacity;
   const capacityPct = Math.min(100, Math.round((course.enrolledCount / course.batchCapacity) * 100));
 
@@ -82,9 +88,11 @@ export default function CourseCard({ course }: CourseCardProps) {
 
         {/* Course Title & Rating */}
         <div className="mb-2">
-          <h4 className="text-base font-bold text-foreground group-hover:text-emerald-400 transition-colors line-clamp-2">
-            {course.title}
-          </h4>
+          <Link href={courseDetailUrl} className="group-hover:underline">
+            <h4 className="text-base font-bold text-foreground group-hover:text-emerald-400 transition-colors line-clamp-2">
+              {course.title}
+            </h4>
+          </Link>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1 text-amber-400 font-bold">
               <Star className="w-3.5 h-3.5 fill-amber-400" />
@@ -168,7 +176,25 @@ export default function CourseCard({ course }: CourseCardProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {enrolled ? (
+          {isTeacher ? (
+            <div className="flex items-center gap-1.5">
+              <Link
+                href={`/teacher/courses/${course.id}`}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition-all"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Manage Course</span>
+              </Link>
+              <button
+                onClick={handleUpgrade}
+                disabled={isUpgrading}
+                title="Expand batch capacity (+10 Seats for 500 ZENI)"
+                className="p-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-bold transition-all"
+              >
+                <PlusCircle className="w-4 h-4" />
+              </button>
+            </div>
+          ) : enrolled ? (
             <Link
               href={`/student/courses/${course.id}`}
               className="px-3.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary dark:bg-primary/20 text-primary dark:text-primary-foreground hover:text-white text-xs font-bold flex items-center gap-1.5 border border-primary/40 transition-colors"
@@ -176,15 +202,6 @@ export default function CourseCard({ course }: CourseCardProps) {
               <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Enter Classroom</span>
             </Link>
-          ) : isTeacher ? (
-            <button
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-              className="px-3.5 py-1.5 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground text-xs font-bold flex items-center gap-1.5 shadow-md shadow-accent/20 transition-all"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+10 Seats (500 ZENI)</span>
-            </button>
           ) : isFull ? (
             <div className="flex items-center gap-2">
               <span className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-1">
@@ -202,9 +219,9 @@ export default function CourseCard({ course }: CourseCardProps) {
           )}
 
           <Link
-            href={`/student/courses/${course.id}`}
+            href={courseDetailUrl}
             className="p-1.5 rounded-lg border border-border/60 hover:bg-slate-100 dark:hover:bg-white/5 text-muted-foreground hover:text-foreground text-xs"
-            title="Course details and curriculum"
+            title={isTeacherContext ? 'Instructor Course Management' : 'Course details and curriculum'}
           >
             <ArrowRight className="w-4 h-4" />
           </Link>

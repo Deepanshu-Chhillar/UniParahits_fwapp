@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import RankProgressionEngine from '@/components/common/RankProgressionEngine';
 import { store } from '@/lib/data/store';
 import { 
   Sparkles, 
@@ -83,7 +84,7 @@ export default function HomePage() {
             </div>
 
             <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-slate-900 dark:text-white">
-              Don't Just Freelance,{' '}
+              Don&apos;t Just Freelance,{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500">
                 Build Your Guild &{' '}
               </span>
@@ -703,6 +704,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ======================================================== */}
+      {/* SECTION 5: RANK PROGRESSION ENGINE (Edit 4)              */}
+      {/* ======================================================== */}
+      <RankProgressionEngine id="rank-progression" />
 
       <Footer />
     </main>

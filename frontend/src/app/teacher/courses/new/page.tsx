@@ -43,7 +43,7 @@ export default function TeacherCreateCoursePage() {
       const skills = skillsStr.split(',').map((s) => s.trim());
       const curriculum = curriculumStr.split('\n').filter((c) => c.trim().length > 0);
 
-      createCourse({
+      const created = createCourse({
         title,
         description,
         skills,
@@ -54,7 +54,11 @@ export default function TeacherCreateCoursePage() {
 
       setIsPublished(true);
       setTimeout(() => {
-        router.push('/teacher/dashboard');
+        if (created?.id) {
+          router.push(`/teacher/courses/${created.id}`);
+        } else {
+          router.push('/teacher/courses');
+        }
       }, 1500);
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to create course');

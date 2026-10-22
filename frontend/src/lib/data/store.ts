@@ -341,7 +341,7 @@ class StoreService {
       'New Task Submission for Review',
       `${user.name} submitted proof for "${task.title}".`,
       'INFO',
-      '/mentor/reviews'
+      '/teacher/mentorship'
     );
 
     this.addAuditLog('TASK_SUBMITTED', user.id, user.name, `Submitted proof for task: ${task.title}`);
@@ -357,13 +357,14 @@ class StoreService {
     const task = this.getTaskById(sub.taskId);
     if (!task) throw new Error('Task not found');
 
+    const wasAlreadyApproved = sub.status === 'APPROVED';
     sub.status = status;
     sub.feedback = feedback;
     sub.reviewedByMentorId = reviewer.id;
     sub.reviewedByMentorName = reviewer.name;
     sub.reviewedAt = new Date().toISOString();
 
-    if (status === 'APPROVED') {
+    if (status === 'APPROVED' && !wasAlreadyApproved) {
       const studentProfile = this.db.studentProfiles[sub.studentId];
       if (studentProfile) {
         // Award MANA
@@ -1380,6 +1381,20 @@ class StoreService {
     const n = this.db.notifications.find((notif) => notif.id === id);
     if (n) {
       n.read = true;
+      this.persist();
+    }
+  }
+
+  public markAllNotificationsAsRead(userId?: string) {
+    const uid = userId || this.db.currentUserId;
+    let changed = false;
+    this.db.notifications.forEach((n) => {
+      if (n.userId === uid && !n.read) {
+        n.read = true;
+        changed = true;
+      }
+    });
+    if (changed) {
       this.persist();
     }
   }

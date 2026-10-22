@@ -37,11 +37,34 @@ export default function TeacherCoursesListPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {myCourses.map((c) => (
-            <CourseCard key={c.id} course={c} />
-          ))}
-        </div>
+        {myCourses.length === 0 ? (
+          <div className="p-12 rounded-3xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 text-center space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-headline text-lg font-bold text-slate-900 dark:text-white">
+                No Teaching Batches Created Yet
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                Launch your first verified masterclass. Set your seat capacity, syllabus, and 85% instructor payout.
+              </p>
+            </div>
+            <Link
+              href="/teacher/courses/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Launch New Course</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {myCourses.map((c) => (
+              <CourseCard key={c.id} course={c} />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

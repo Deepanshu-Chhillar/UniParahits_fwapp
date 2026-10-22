@@ -149,6 +149,7 @@ export function useUniStore() {
 
     // Notifications & Admin
     markNotificationAsRead: (id: string) => store.markNotificationAsRead(id),
+    markAllNotificationsAsRead: () => store.markAllNotificationsAsRead(),
     updateEconomyConfig: (config: Partial<EconomyConfig>) => store.updateEconomyConfig(config),
   };
 }

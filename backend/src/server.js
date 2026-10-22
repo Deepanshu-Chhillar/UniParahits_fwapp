@@ -60,6 +60,19 @@ const DB = {
       rating: 4.7,
       status: 'ACTIVE',
     },
+    {
+      id: 'course-applied-ai',
+      title: 'Applied AI & LLM Systems Engineering (AI Course)',
+      teacherId: 'user-priya-c',
+      teacherName: 'Priya Singh',
+      teacherRank: 'C',
+      priceZeni: 2500,
+      batchCapacity: 10,
+      enrolledCount: 5,
+      meetUrl: 'https://meet.google.com/uni-para-ai',
+      rating: 4.9,
+      status: 'ACTIVE',
+    },
   ],
   tasks: [
     {
@@ -314,6 +327,23 @@ app.post('/api/courses/:id/upgrade-capacity', (req, res) => {
   if (!course) return res.status(404).json({ success: false, error: 'Course not found' });
 
   const teacherId = req.body.teacherId || course.teacherId;
+  const user = DB.users.find((u) => u.id === teacherId);
+
+  // Authorization check: Only authorized teachers (Rank D+, role TEACHER or capabilities including TEACHER) can execute
+  const isAuthorizedTeacher = user && (
+    user.role === 'TEACHER' ||
+    (user.rank && user.rank !== 'E') ||
+    user.capabilities?.includes('TEACHER') ||
+    user.capabilities?.includes('ADMIN')
+  );
+
+  if (!isAuthorizedTeacher) {
+    return res.status(403).json({
+      success: false,
+      error: 'Unauthorized: Only teachers with Rank D or higher can burn ZENI for capacity upgrades.',
+    });
+  }
+
   const teacherWallet = DB.wallets[teacherId] || { zeni: 0 };
 
   try {

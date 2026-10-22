@@ -14,7 +14,6 @@ import {
   ArrowRight,
   TrendingUp,
   AlertCircle,
-  FolderGit2,
   Lock,
   Plus,
   Zap,
@@ -24,6 +23,7 @@ import {
   ChevronRight,
   X,
   FileCheck2,
+  Wallet,
 } from 'lucide-react';
 import RankBadge from '@/components/common/RankBadge';
 import TrustScoreBadge from '@/components/common/TrustScoreBadge';
@@ -145,62 +145,7 @@ export default function StudentDashboardPage() {
   const codeRatio = totalMana > 0 ? codeTasksMana / totalMana : 0;
   const codeDashOffset = totalMana > 0 ? circumference * (1 - codeRatio) : circumference;
 
-  // Real Ledger Items for Current User
-  const userZeniTxs = useMemo(
-    () => zeniTransactions.filter((z) => z.userId === currentUser.id),
-    [zeniTransactions, currentUser.id]
-  );
 
-  interface LedgerItem {
-    id: string;
-    txHash: string;
-    action: string;
-    entity: string;
-    dateOrBlock: string;
-    status: 'VERIFIED' | 'COMPLETED' | 'PENDING' | 'BURNED';
-  }
-
-  const ledgerItems = useMemo<LedgerItem[]>(() => {
-    const items: LedgerItem[] = [];
-
-    // Submissions
-    userSubmissions.forEach((s, idx) => {
-      items.push({
-        id: s.id,
-        txHash: `0x${s.id.replace(/[^a-f0-9]/gi, '').padEnd(4, '0').slice(0, 4)}...${s.id.slice(-4)}`,
-        action: s.submissionType === 'GITHUB' ? 'TASK_COMPLETED_PROOF_MINT' : 'WORK_SUBMISSION',
-        entity: s.taskTitle || `Task #${s.taskId}`,
-        dateOrBlock: `#${1948200 + idx * 7}`,
-        status: s.status === 'APPROVED' ? 'VERIFIED' : 'PENDING',
-      });
-    });
-
-    // Zeni Txs
-    userZeniTxs.forEach((z, idx) => {
-      items.push({
-        id: z.id,
-        txHash: `0x${z.id.replace(/[^a-f0-9]/gi, '').padEnd(4, '0').slice(0, 4)}...${z.id.slice(-4)}`,
-        action: z.type === 'CAPACITY_UPGRADE' ? 'CAPACITY_SINK_BURN' : z.type,
-        entity: `${z.reason} (${z.amount >= 0 ? '+' : ''}${z.amount} ZENI)`,
-        dateOrBlock: `#${1948150 + idx * 5}`,
-        status: z.type === 'CAPACITY_UPGRADE' ? 'BURNED' : 'VERIFIED',
-      });
-    });
-
-    // Mana Txs
-    userManaTxs.forEach((m, idx) => {
-      items.push({
-        id: m.id,
-        txHash: `0x${m.id.replace(/[^a-f0-9]/gi, '').padEnd(4, '0').slice(0, 4)}...${m.id.slice(-4)}`,
-        action: m.type === 'EARN' ? 'MANA_XP_MINT' : 'MANA_XP_ADJUST',
-        entity: `${m.sourceReason} (+${m.amount} MANA)`,
-        dateOrBlock: `#${1948100 + idx * 3}`,
-        status: 'VERIFIED',
-      });
-    });
-
-    return items;
-  }, [userSubmissions, userZeniTxs, userManaTxs]);
 
   const handleProofSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,14 +165,6 @@ export default function StudentDashboardPage() {
       setProofSubmitted(false);
       showToast(err.message || 'Error submitting proof.');
     }
-  };
-
-  const handleSimulateBurn = () => {
-    if (liquidZeni < 500) {
-      showToast(`Insufficient ZENI balance (current: ${liquidZeni} ZENI). Requires 500 ZENI.`);
-      return;
-    }
-    showToast('Capacity Sink Executed: Burned 500 ZENI. +10 Course Seats unlocked.');
   };
 
   if (!studentProfile) {
@@ -404,102 +341,126 @@ export default function StudentDashboardPage() {
                     ZENI Liquid Capacity & Sink Meter
                   </h3>
                 </div>
-                <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                  ₹1 PEGGED
-                </span>
+                <Link
+                  href="/student/wallet"
+                  className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-full border border-amber-500/20 flex items-center gap-1 transition-colors"
+                  title="View wallet & liquidity ledger"
+                >
+                  <span>₹1 INR PEGGED</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
 
-              {/* Graphic Display */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center my-6">
-                {/* SVG Visual Circle */}
-                <div className="sm:col-span-5 flex justify-center">
-                  <div className="relative w-36 h-36 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        stroke="currentColor"
-                        strokeWidth="12"
-                        fill="transparent"
-                        className="text-slate-100 dark:text-white/5"
-                      />
-                      {totalZeni > 0 && (
-                        <>
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            stroke="#f59e0b"
-                            strokeWidth="12"
-                            fill="transparent"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={zeniLiquidOffset}
-                            strokeLinecap="round"
-                          />
-                          {escrowZeni > 0 && (
+              {/* Interactive Zeni Graph & Metric Display (Click to open detailed Wallet & Ledger) */}
+              <Link
+                href="/student/wallet"
+                className="group/zeni block my-4 p-3 rounded-2xl transition-all duration-300 hover:bg-amber-500/5 hover:border hover:border-amber-500/30 border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                aria-label="Interactive Zeni Graph: Click to view wallet balances, dual-vault and transaction ledger"
+                title="Click to view wallet balances, dual-vault and transaction ledger"
+                role="link"
+                tabIndex={0}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+                  {/* SVG Visual Circle */}
+                  <div className="sm:col-span-5 flex justify-center">
+                    <div className="relative w-36 h-36 flex items-center justify-center group-hover/zeni:scale-105 transition-transform duration-300">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          stroke="currentColor"
+                          strokeWidth="12"
+                          fill="transparent"
+                          className="text-slate-100 dark:text-white/5"
+                        />
+                        {totalZeni > 0 && (
+                          <>
                             <circle
                               cx="50"
                               cy="50"
                               r="40"
-                              stroke="#10b981"
+                              stroke="#f59e0b"
                               strokeWidth="12"
                               fill="transparent"
                               strokeDasharray={circumference}
-                              strokeDashoffset={zeniEscrowOffset}
+                              strokeDashoffset={zeniLiquidOffset}
                               strokeLinecap="round"
                             />
-                          )}
-                        </>
-                      )}
-                    </svg>
-                    <div className="absolute text-center">
-                      <span className="font-mono text-lg font-black text-slate-900 dark:text-white">
-                        {totalZeni >= 1000 ? `${(totalZeni / 1000).toFixed(1)}K` : totalZeni}
-                      </span>
-                      <span className="block font-mono text-[9px] uppercase text-slate-400">Total ZENI</span>
+                            {escrowZeni > 0 && (
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="40"
+                                stroke="#10b981"
+                                strokeWidth="12"
+                                fill="transparent"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={zeniEscrowOffset}
+                                strokeLinecap="round"
+                              />
+                            )}
+                          </>
+                        )}
+                      </svg>
+                      <div className="absolute text-center">
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white group-hover/zeni:text-amber-500 transition-colors">
+                          {totalZeni >= 1000 ? `${(totalZeni / 1000).toFixed(1)}K` : totalZeni}
+                        </span>
+                        <span className="block font-mono text-[9px] uppercase text-slate-400">Total ZENI</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Metrics Breakdown */}
+                  <div className="sm:col-span-7 space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/zeni:border-amber-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Available Liquid</span>
+                      </div>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{liquidZeni.toLocaleString()} ZENI</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/zeni:border-emerald-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Active Escrow Stake</span>
+                      </div>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{escrowZeni.toLocaleString()} ZENI</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/zeni:border-rose-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-3.5 h-3.5 text-rose-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Sinks Burned</span>
+                      </div>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">{burnedZeni.toLocaleString()} ZENI</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Metrics Breakdown */}
-                <div className="sm:col-span-7 space-y-3 font-mono text-xs">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Available Liquid</span>
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-white">{liquidZeni.toLocaleString()} ZENI</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Active Escrow Stake</span>
-                    </div>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{escrowZeni.toLocaleString()} ZENI</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <Flame className="w-3.5 h-3.5 text-rose-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Sinks Burned</span>
-                    </div>
-                    <span className="font-bold text-rose-600 dark:text-rose-400">{burnedZeni.toLocaleString()} ZENI</span>
-                  </div>
+                {/* Interactive Drill-in Hint */}
+                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] font-mono text-amber-600 dark:text-amber-400">
+                  <span className="text-slate-500 dark:text-slate-400">Click graph to open wallet ledger</span>
+                  <span className="flex items-center gap-1 font-semibold group-hover/zeni:translate-x-1 transition-transform">
+                    <span>Dual Vault Ledger</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
-              </div>
+              </Link>
             </div>
 
-            {/* Expansion Sink Button */}
+            {/* Wallet Payout & Liquidity Status Footer */}
             <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Expand cohort seats or cloud pods:</span>
-              <button
-                type="button"
-                onClick={handleSimulateBurn}
-                className="py-2 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:opacity-90 text-white font-mono text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 active:scale-95"
+              <span className="text-xs text-slate-600 dark:text-slate-400">
+                Smart Escrow: <strong className="text-slate-900 dark:text-white">85% Builder / 15% Campus</strong> allocation
+              </span>
+              <Link
+                href="/student/wallet"
+                className="py-2 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 text-white font-mono text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 active:scale-95"
               >
-                <Flame className="w-3.5 h-3.5" />
-                <span>Burn 500 ZENI to Expand</span>
-              </button>
+                <Wallet className="w-3.5 h-3.5" />
+                <span>Manage Wallet & Ledger</span>
+              </Link>
             </div>
           </div>
 
@@ -515,89 +476,112 @@ export default function StudentDashboardPage() {
                     MANA / XP Sovereign Proof
                   </h3>
                 </div>
-                <span className="font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20">
-                  NON-PURCHASABLE
-                </span>
+                <Link
+                  href="/wallet/mana"
+                  className="font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 px-2.5 py-1 rounded-full border border-cyan-500/20 flex items-center gap-1 transition-colors"
+                  title="View detailed MANA analytics & transaction ledger"
+                >
+                  <span>NON-PURCHASABLE</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
 
-              {/* Graphic Display */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center my-6">
-                {/* SVG Visual Circle */}
-                <div className="sm:col-span-5 flex justify-center">
-                  <div className="relative w-36 h-36 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        stroke="currentColor"
-                        strokeWidth="12"
-                        fill="transparent"
-                        className="text-slate-100 dark:text-white/5"
-                      />
-                      {totalMana > 0 && (
-                        <>
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            stroke="#06b6d4"
-                            strokeWidth="12"
-                            fill="transparent"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={manaDashOffset}
-                            strokeLinecap="round"
-                          />
-                          {codeTasksMana > 0 && (
+              {/* Interactive Mana Graph & Metric Display (Click to open detailed Mana XP experience) */}
+              <Link
+                href="/wallet/mana"
+                className="group/mana block my-4 p-3 rounded-2xl transition-all duration-300 hover:bg-cyan-500/5 hover:border hover:border-cyan-500/30 border border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500/50 cursor-pointer"
+                aria-label="Interactive Mana Graph: Click to view detailed MANA XP breakdown, ledger and progression matrix"
+                title="Click to view detailed MANA XP breakdown and progression matrix"
+                role="link"
+                tabIndex={0}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+                  {/* SVG Visual Circle */}
+                  <div className="sm:col-span-5 flex justify-center">
+                    <div className="relative w-36 h-36 flex items-center justify-center group-hover/mana:scale-105 transition-transform duration-300">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          stroke="currentColor"
+                          strokeWidth="12"
+                          fill="transparent"
+                          className="text-slate-100 dark:text-white/5"
+                        />
+                        {totalMana > 0 && (
+                          <>
                             <circle
                               cx="50"
                               cy="50"
                               r="40"
-                              stroke="#7c3aed"
+                              stroke="#06b6d4"
                               strokeWidth="12"
                               fill="transparent"
                               strokeDasharray={circumference}
-                              strokeDashoffset={codeDashOffset}
+                              strokeDashoffset={manaDashOffset}
                               strokeLinecap="round"
                             />
-                          )}
-                        </>
-                      )}
-                    </svg>
-                    <div className="absolute text-center">
-                      <span className="font-mono text-lg font-black text-slate-900 dark:text-white">
-                        {totalMana.toLocaleString()}
-                      </span>
-                      <span className="block font-mono text-[9px] uppercase text-slate-400">Total MANA</span>
+                            {codeTasksMana > 0 && (
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="40"
+                                stroke="#7c3aed"
+                                strokeWidth="12"
+                                fill="transparent"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={codeDashOffset}
+                                strokeLinecap="round"
+                              />
+                            )}
+                          </>
+                        )}
+                      </svg>
+                      <div className="absolute text-center">
+                        <span className="font-mono text-lg font-black text-slate-900 dark:text-white group-hover/mana:text-cyan-400 transition-colors">
+                          {totalMana.toLocaleString()}
+                        </span>
+                        <span className="block font-mono text-[9px] uppercase text-slate-400">Total MANA</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Metrics Breakdown */}
+                  <div className="sm:col-span-7 space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/mana:border-cyan-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Code Tasks Verified</span>
+                      </div>
+                      <span className="font-bold text-cyan-600 dark:text-cyan-400">{codeTasksMana.toLocaleString()} MANA</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/mana:border-purple-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Peer Review Bounty</span>
+                      </div>
+                      <span className="font-bold text-purple-600 dark:text-purple-400">{peerReviewMana.toLocaleString()} MANA</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 group-hover/mana:border-blue-500/20 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                        <span className="text-slate-700 dark:text-slate-300">Guild Quorum Share</span>
+                      </div>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{guildMana.toLocaleString()} MANA</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Metrics Breakdown */}
-                <div className="sm:col-span-7 space-y-3 font-mono text-xs">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Code Tasks Verified</span>
-                    </div>
-                    <span className="font-bold text-cyan-600 dark:text-cyan-400">{codeTasksMana.toLocaleString()} MANA</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Peer Review Bounty</span>
-                    </div>
-                    <span className="font-bold text-purple-600 dark:text-purple-400">{peerReviewMana.toLocaleString()} MANA</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                      <span className="text-slate-700 dark:text-slate-300">Guild Quorum Share</span>
-                    </div>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">{guildMana.toLocaleString()} MANA</span>
-                  </div>
+                {/* Interactive Drill-in Hint */}
+                <div className="mt-3 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] font-mono text-cyan-600 dark:text-cyan-400">
+                  <span className="text-slate-500 dark:text-slate-400">Click graph to open detailed ledger</span>
+                  <span className="flex items-center gap-1 font-semibold group-hover/mana:translate-x-1 transition-transform">
+                    <span>Full XP Matrix</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Rank Gating Status */}
@@ -615,92 +599,6 @@ export default function StudentDashboardPage() {
               </button>
             </div>
           </div>
-        </section>
-
-        {/* ======================================================== */}
-        {/* SECTION 3: LAST ACTIVITY & LEDGER PROOFS                 */}
-        {/* ======================================================== */}
-        <section className="rounded-3xl bg-white dark:bg-[#111333] border border-slate-200 dark:border-white/10 p-6 sm:p-7 shadow-sm">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
-            <div>
-              <span className="font-mono text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
-                On-Chain Telemetry
-              </span>
-              <h3 className="font-headline text-lg font-bold text-slate-900 dark:text-white">
-                Last Activity & Ledger Proofs
-              </h3>
-            </div>
-            <span className="font-mono text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-              Live Arbitrum Node
-            </span>
-          </div>
-
-          {ledgerItems.length === 0 ? (
-            /* Clean Empty State for Brand New Account */
-            <div className="py-12 px-4 text-center flex flex-col items-center justify-center">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-4 shadow-sm">
-                <FolderGit2 className="w-7 h-7" />
-              </div>
-              <h4 className="font-headline text-base font-bold text-slate-900 dark:text-white">
-                No Activity or Ledger Proofs Yet
-              </h4>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 max-w-md font-mono">
-                Your account is newly created! Complete tasks, submit cryptographic pull requests, or join a guild to see verified on-chain ledger entries recorded here.
-              </p>
-              <div className="mt-5 flex items-center gap-3">
-                <Link
-                  href="/student/tasks"
-                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
-                >
-                  Explore Open Tasks
-                </Link>
-                <Link
-                  href="/student/courses"
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white font-mono text-xs font-bold transition-all border border-slate-200 dark:border-white/10"
-                >
-                  Browse Courses
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto mt-4">
-              <table className="w-full text-left font-mono text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400">
-                    <th className="py-3 px-3">TX HASH</th>
-                    <th className="py-3 px-3">PROOF ACTION</th>
-                    <th className="py-3 px-3">ENTITY / CONTRACT</th>
-                    <th className="py-3 px-3">BLOCK</th>
-                    <th className="py-3 px-3 text-right">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {ledgerItems.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="py-3.5 px-3 text-cyan-700 dark:text-cyan-400 font-bold">{row.txHash}</td>
-                      <td className="py-3.5 px-3 font-semibold text-slate-900 dark:text-white">{row.action}</td>
-                      <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">{row.entity}</td>
-                      <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400">{row.dateOrBlock}</td>
-                      <td className="py-3.5 px-3 text-right">
-                        <span
-                          className={`px-2 py-0.5 rounded-full font-bold text-[10px] border ${
-                            row.status === 'VERIFIED'
-                              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
-                              : row.status === 'BURNED'
-                              ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
-                              : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20'
-                          }`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </section>
 
         {/* ======================================================== */}

@@ -103,6 +103,16 @@ export async function PATCH(
   try {
     const body = await request.json();
     const teacherId = body.teacherId || course.teacherId;
+    const userRole = body.userRole;
+    const userRank = body.userRank;
+
+    // Authorization check: Only teachers with Rank D+ or role TEACHER/ADMIN can execute
+    if (userRank === 'E' && userRole !== 'TEACHER' && userRole !== 'ADMIN') {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized: Only teachers with Rank D or higher can burn ZENI for capacity upgrades.'
+      }, { status: 403 });
+    }
 
     const currentCapacity = course.batchCapacity || 10;
     const newCapacity = currentCapacity + INITIAL_ECONOMY_CONFIG.capacityUpgradeSize;

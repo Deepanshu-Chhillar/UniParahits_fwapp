@@ -29,8 +29,8 @@ function LoginContent() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('demo123');
-  const [selectedRoleTab, setSelectedRoleTab] = useState<'STUDENT' | 'COMPANY' | 'ADMIN'>(
-    roleParam === 'company' ? 'COMPANY' : roleParam === 'admin' ? 'ADMIN' : 'STUDENT'
+  const [selectedRoleTab, setSelectedRoleTab] = useState<'STUDENT' | 'TEACHER' | 'COMPANY' | 'ADMIN'>(
+    roleParam === 'teacher' ? 'TEACHER' : roleParam === 'company' ? 'COMPANY' : roleParam === 'admin' ? 'ADMIN' : 'STUDENT'
   );
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -53,10 +53,10 @@ function LoginContent() {
           router.push('/company/dashboard');
         } else if (foundUser.role === 'ADMIN') {
           router.push('/admin/dashboard');
-        } else if (foundUser.id === 'user-aarav-d' || email.toLowerCase().includes('teacher') || email.toLowerCase().includes('aarav')) {
+        } else if (foundUser.id === 'user-aarav-d' || email.toLowerCase().includes('teacher') || email.toLowerCase().includes('aarav') || selectedRoleTab === 'TEACHER') {
           router.push('/teacher/dashboard');
         } else if (foundUser.id === 'user-priya-c' || email.toLowerCase().includes('mentor') || email.toLowerCase().includes('priya')) {
-          router.push('/mentor/dashboard');
+          router.push('/teacher/mentorship');
         } else {
           router.push('/student/dashboard');
         }
@@ -144,7 +144,7 @@ function LoginContent() {
           </div>
 
           {/* Role selector tabs */}
-          <div className="flex rounded-xl bg-white/5 p-1 mb-5 border border-white/10 text-xs font-medium">
+          <div className="flex rounded-xl bg-white/5 p-1 mb-5 border border-white/10 text-xs font-medium gap-1">
             <button
               type="button"
               onClick={() => {
@@ -158,6 +158,20 @@ function LoginContent() {
               }`}
             >
               Student
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedRoleTab('TEACHER');
+                setEmail('aarav.sharma@nsut.ac.in');
+              }}
+              className={`flex-1 py-1.5 rounded-lg transition-all ${
+                selectedRoleTab === 'TEACHER'
+                  ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Teacher
             </button>
             <button
               type="button"
