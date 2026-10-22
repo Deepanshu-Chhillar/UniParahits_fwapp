@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MeritForge Cyber-Academic &amp; Student Tokenomics Dashboard</title>
+<!-- Tailwind CSS CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Custom Config -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: {
+              base: '#07080d',
+              surface: '#0d0f17',
+              panel: '#121522',
+              card: '#161928',
+              hover: '#1d2236',
+              border: '#1f253d',
+              subtle: '#2d3556'
+            },
+            cyber: {
+              cyan: '#00f0ff',
+              cyanGlow: 'rgba(0, 240, 255, 0.18)',
+              amber: '#f59e0b',
+              amberGlow: 'rgba(245, 158, 11, 0.18)',
+              gold: '#fbbf24',
+              emerald: '#10b981',
+              violet: '#8b5cf6',
+              rose: '#f43f5e'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'DM Sans', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px -4px rgba(0, 240, 255, 0.35)',
+            'glow-amber': '0 0 25px -4px rgba(245, 158, 11, 0.35)',
+            'panel': '0 10px 30px -10px rgba(0, 0, 0, 0.7)'
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Styles -->
+<style data-purpose="custom-scrollbars">
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0f17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252b43;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f0ff;
+    }
+  </style>
+<style data-purpose="donut-chart-animations">
+    .donut-segment {
+      transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chart-hover:hover .donut-segment {
+      opacity: 0.95;
+    }
+    @keyframes flashHighlightDark {
+      0% { background-color: rgba(0, 240, 255, 0.25); transform: translateY(-2px); }
+      100% { background-color: transparent; transform: translateY(0); }
+    }
+    .animate-flash {
+      animation: flashHighlightDark 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .scanline-grid {
+      background-size: 24px 24px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+  </style>
+<!-- END: Custom Styles -->
+</head>
+<body class="bg-obsidian-base min-h-screen text-slate-200 font-sans antialiased flex flex-col justify-start relative scanline-grid selection:bg-cyber-cyan selection:text-black">
+<!-- BEGIN: Toast Notification Container -->
+<div class="fixed top-5 right-6 z-50 flex flex-col gap-2.5 pointer-events-none" id="toast-container"></div>
+<!-- BEGIN: TopBar Command Ribbon & Jury Simulator -->
+<header class="w-full bg-obsidian-surface/90 backdrop-blur-md border-b border-obsidian-border sticky top-0 z-40 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-panel">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyber-cyan via-indigo-600 to-cyber-amber p-0.5 shadow-glow-cyan flex items-center justify-center">
+<div class="w-full h-full bg-obsidian-base rounded-[10px] flex items-center justify-center">
+<svg class="w-5 h-5 text-cyber-cyan" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-base font-bold tracking-tight text-white flex items-center gap-1">
+            Merit<span class="text-cyber-cyan font-extrabold drop-shadow">Forge</span>
+</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyber-emerald/10 text-cyber-emerald border border-cyber-emerald/30">v2.4</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyber-rose/10 text-cyber-rose border border-cyber-rose/30 font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-cyber-rose animate-ping"></span> 185 GB Mesh
+            </span>
+</div>
+<p class="text-[10px] tracking-wider uppercase text-slate-400 font-mono hidden sm:block">Academic Protocol</p>
+</div>
+</div>
+<!-- Center: Jury Fast-Pass Simulator -->
+<div class="flex items-center gap-2 bg-obsidian-panel/90 px-3 py-1.5 rounded-2xl border border-obsidian-border shadow-inner flex-wrap">
+<span class="inline-flex items-center gap-1.5 text-cyber-cyan font-mono font-bold text-[11px]">
+<span class="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse"></span> JURY FAST-PASS SIMULATOR
+      </span>
+<span class="text-slate-400 hidden xl:inline text-[11px]">Preview governance, gates &amp; dual-vault as:</span>
+<div class="flex items-center gap-1 flex-wrap" data-purpose="role-switcher">
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-cyber-cyan text-slate-950 font-bold shadow-sm transition-all cursor-pointer" id="btn-role-rohan" onclick="switchRole('rohan')">
+          1. Rohan (Rank E)
+        </button>
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer" id="btn-role-aarav" onclick="switchRole('aarav')">
+          2. Aarav (Rank D)
+        </button>
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer" id="btn-role-priya" onclick="switchRole('priya')">
+          3. Priya (Rank C)
+        </button>
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer" id="btn-role-rahul" onclick="switchRole('rahul')">
+          4. Rahul (Rank B)
+        </button>
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer" id="btn-role-novatech" onclick="switchRole('novatech')">
+          5. NovaTech (Sponsor)
+        </button>
+<button class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer" id="btn-role-admin" onclick="switchRole('admin')">
+          6. Dr. Iyer (Super Admin)
+        </button>
+</div>
+</div>
+<!-- Right Header Controls -->
+<div class="flex items-center gap-2.5">
+<!-- Search bar -->
+<div class="relative min-w-[200px] hidden md:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</span>
+<input class="w-full pl-9 pr-4 py-1.5 bg-obsidian-panel rounded-xl text-xs border border-obsidian-border focus:outline-none focus:border-cyber-cyan text-slate-200 placeholder-slate-500 shadow-inner" id="search-ledger-input" oninput="filterLedgerSearch(this.value)" placeholder="Search bounties, ledger hashes..." type="text"/>
+</div>
+<button aria-label="Notifications" class="w-9 h-9 rounded-xl bg-obsidian-panel border border-obsidian-border flex items-center justify-center text-slate-300 hover:text-cyber-cyan shadow-sm hover:border-cyber-cyan/40 transition-colors relative cursor-pointer" onclick="showToast('Zero unverified disputes. Network sync nominal.', 'info')">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyber-amber animate-pulse"></span>
+</button>
+<button aria-label="Switch Session" class="w-9 h-9 rounded-xl bg-obsidian-panel border border-obsidian-border flex items-center justify-center text-cyber-cyan hover:text-white shadow-sm hover:border-cyber-cyan/40 transition-colors cursor-pointer" onclick="openProofModal()" title="Submit Proof of Work">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<button class="px-3.5 py-1.5 bg-gradient-to-r from-cyber-emerald to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95" onclick="openBountyModal()">
+<span>Stake Escrow</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: Main Telemetry Cockpit Container -->
+<div class="flex-1 w-full max-w-[1720px] mx-auto p-3 sm:p-5 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+<!-- ========================================== -->
+<!-- COLUMN 1 (LG: COL-SPAN-3): Profile & Nav Station -->
+<!-- ========================================== -->
+<aside class="lg:col-span-3 space-y-4">
+<!-- Profile Command ID Block -->
+<div class="bg-obsidian-panel border border-obsidian-border rounded-2xl p-5 shadow-panel relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-cyber-cyan/5 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center gap-4">
+<div class="relative group cursor-pointer shrink-0" onclick="openProofModal()">
+<div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyber-amber via-cyber-cyan to-indigo-600 p-0.5 shadow-glow-cyan">
+<div class="w-full h-full bg-obsidian-base rounded-[14px] flex items-center justify-center overflow-hidden">
+<div class="w-full h-full bg-gradient-to-t from-black to-slate-900 flex items-center justify-center text-xl font-extrabold text-cyber-cyan font-mono" id="current-user-avatar">
+                  RV
+                </div>
+</div>
+</div>
+<span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-cyber-emerald border-2 border-obsidian-panel flex items-center justify-center text-[9px] font-bold text-black" title="Active Validator">✓</span>
+</div>
+<div class="min-w-0 flex-1">
+<h3 class="text-base font-bold text-white tracking-wide truncate" id="current-user-name">Rohan Verma</h3>
+<p class="text-xs text-cyber-cyan font-mono flex items-center gap-1.5 mt-0.5" id="current-user-role">
+<span class="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse"></span> Rank E Apprentice
+            </p>
+<div class="mt-1.5 text-[11px] text-slate-400 bg-obsidian-card px-2.5 py-0.5 rounded-md border border-obsidian-border font-mono inline-block truncate" id="current-user-guild">
+              Guild ID: #CYBER-0492
+            </div>
+</div>
+</div>
+</div>
+<!-- Navigation Dock -->
+<nav aria-label="Sidebar Navigation" class="bg-obsidian-panel border border-obsidian-border rounded-2xl p-2.5 shadow-panel space-y-1">
+<!-- Active Nav Item -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30 shadow-sm transition-all" href="#">
+<svg class="w-4 h-4 text-cyber-cyan" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Dashboard</span>
+</a>
+<!-- Dual Vault -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-obsidian-card border border-transparent hover:border-obsidian-border transition-all cursor-pointer" onclick="showToast('Navigating to Dual Vault smart contract state...', 'info')">
+<div class="flex items-center gap-3">
+<svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Dual Vault</span>
+</div>
+<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/30">LIVE</span>
+</a>
+<!-- Bounties -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-obsidian-card border border-transparent hover:border-obsidian-border transition-all cursor-pointer" onclick="openBountyModal()">
+<svg class="w-4 h-4 text-cyber-amber" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Bounties</span>
+</a>
+<!-- TMS Classroom -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-obsidian-card border border-transparent hover:border-obsidian-border transition-all cursor-pointer" onclick="simulateZeniBurn()">
+<div class="flex items-center gap-3">
+<svg class="w-4 h-4 text-cyber-emerald" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>TMS Classroom</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-cyber-emerald animate-ping"></span>
+</a>
+<!-- Guild Quorum -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-obsidian-card border border-transparent hover:border-obsidian-border transition-all cursor-pointer" onclick="simulateManaXPReview()">
+<svg class="w-4 h-4 text-cyber-violet" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Guild Quorum</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-obsidian-card border border-transparent hover:border-obsidian-border transition-all cursor-pointer" onclick="showToast('Protocol Settings: Arbitrum Sepolia v2.4 Active', 'info')">
+<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Settings</span>
+</a>
+</nav>
+<!-- Capacity Sink Expansion Card -->
+<div class="bg-gradient-to-b from-obsidian-panel to-obsidian-card border-2 border-dashed border-cyber-amber/30 rounded-2xl p-4 text-center shadow-panel relative">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyber-amber text-slate-950 font-bold px-2.5 py-0.5 rounded-full text-[10px] tracking-wider uppercase shadow-glow-amber">
+            Sink Protocol
+          </div>
+<p class="text-xs font-bold text-white mt-1">Capacity Sink Expansion</p>
+<p class="text-[11px] text-slate-400 mt-1">Unlock +20 Course Seats or Cloud Pods</p>
+<button class="mt-3.5 inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-cyber-amber to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-glow-amber transition-all active:scale-[0.98] cursor-pointer" onclick="simulateZeniBurn()" type="button">
+<svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+<span>Burn 500 ZENI to Expand</span>
+</button>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- COLUMN 2 & 3 (LG: COL-SPAN-9): Command Mainframe -->
+<!-- ========================================== -->
+<main class="lg:col-span-9 space-y-6">
+<!-- Top Row: "Manage your Vault & Ranks" + 4 Modular Cards Grid -->
+<section class="bg-obsidian-panel border border-obsidian-border rounded-3xl p-5 md:p-6 shadow-panel">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-5 border-b border-obsidian-border">
+<div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-mono uppercase tracking-widest text-cyber-cyan font-bold">Consensus Hub</span>
+<span class="text-slate-500">•</span>
+<h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white">Manage your Vault &amp; Ranks</h1>
+</div>
+<p class="mt-1 text-xs text-slate-400 max-w-xl">
+              Monitor liquid ZENI tokens, sovereign MANA/XP reputation, and proof-of-work progression across CyberForge clusters.
+            </p>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-700/50 text-indigo-300 text-xs font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span> Network: Arbitrum Sepolia
+            </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyber-emerald/10 border border-cyber-emerald/30 text-cyber-emerald text-xs font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-cyber-emerald"></span> Consensus 99.8%
+            </span>
+</div>
+</div>
+<!-- Horizontal 4-Card Command Matrix -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+<!-- Card 0: Dashed Add Item -->
+<div class="border-2 border-dashed border-obsidian-subtle hover:border-cyber-cyan rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-obsidian-card/40 hover:bg-obsidian-card transition-all min-h-[145px] group" onclick="openBountyModal()">
+<div class="w-10 h-10 rounded-xl bg-obsidian-hover group-hover:bg-cyber-cyan/20 border border-obsidian-border group-hover:border-cyber-cyan/50 flex items-center justify-center text-slate-400 group-hover:text-cyber-cyan transition-all shadow-inner">
+<svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</div>
+<span class="mt-2.5 text-xs font-bold text-slate-200 group-hover:text-cyber-cyan transition-colors">New Bounty</span>
+<span class="text-[10px] text-slate-500 font-mono">Lock Escrow</span>
+</div>
+<!-- Card 01: Active Tasks -->
+<div class="bg-gradient-to-br from-emerald-950/40 to-obsidian-card border border-cyber-emerald/30 rounded-2xl p-4 flex flex-col justify-between shadow-panel hover:border-cyber-emerald transition-all min-h-[145px] group cursor-pointer" onclick="openProofModal()">
+<div class="flex items-center justify-between text-xs text-cyber-emerald font-mono">
+<span class="font-bold">01</span>
+<span>:</span>
+</div>
+<div class="my-auto py-1">
+<div class="flex items-center gap-2 mb-1">
+<div class="w-7 h-7 rounded-lg bg-cyber-emerald/20 flex items-center justify-center text-cyber-emerald">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h4 class="text-xs font-bold text-white tracking-tight">Active Tasks</h4>
+</div>
+<p class="text-xs text-cyber-emerald font-mono font-bold" id="card-active-tasks-stat">8 / 10 Complete</p>
+</div>
+<div class="text-[11px] text-slate-400 font-medium flex items-center justify-between pt-1 border-t border-obsidian-border/50">
+<span>4 Pending Proofs</span>
+<span class="text-[9px] bg-cyber-emerald/20 text-cyber-emerald px-1.5 py-0.5 rounded font-mono font-bold">Sign +</span>
+</div>
+</div>
+<!-- Card 02: Guild Quorum -->
+<div class="bg-gradient-to-br from-indigo-950/40 to-obsidian-card border border-indigo-700/40 rounded-2xl p-4 flex flex-col justify-between shadow-panel hover:border-indigo-400 transition-all min-h-[145px] group cursor-pointer" onclick="simulateManaXPReview()">
+<div class="flex items-center justify-between text-xs text-indigo-400 font-mono">
+<span class="font-bold">02</span>
+<span>:</span>
+</div>
+<div class="my-auto py-1">
+<div class="flex items-center gap-2 mb-1">
+<div class="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h4 class="text-xs font-bold text-white tracking-tight">Guild Quorum</h4>
+</div>
+<p class="text-xs text-indigo-300 font-mono font-bold" id="card-guild-quorum-stat">CyberForge #04</p>
+</div>
+<div class="text-[11px] text-slate-400 font-medium flex items-center justify-between pt-1 border-t border-obsidian-border/50">
+<span id="card-standing-rank">Top 8% Contributor</span>
+<span class="text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">Review</span>
+</div>
+</div>
+<!-- Card 03: Total Escrow -->
+<div class="bg-gradient-to-br from-amber-950/40 via-obsidian-card to-obsidian-panel border border-cyber-amber/40 rounded-2xl p-4 flex flex-col justify-between shadow-panel hover:border-cyber-amber transition-all min-h-[145px] relative overflow-hidden group cursor-pointer" onclick="openBountyModal()">
+<div class="flex items-center justify-between text-xs text-cyber-amber font-mono relative z-10">
+<span class="text-cyber-amber font-bold" id="card-escrow-badge">ES-60K</span>
+<span class="w-2 h-2 rounded-full bg-cyber-amber animate-pulse"></span>
+</div>
+<div class="my-auto py-1 relative z-10">
+<span class="text-[9px] tracking-widest uppercase font-mono text-cyber-cyan font-bold">Total Escrow</span>
+<h4 class="text-base font-extrabold tracking-tight text-white mt-0.5" id="card-escrow-amount">60,000 ZENI</h4>
+<p class="text-[10px] text-slate-400 font-mono">Secured in Timelock</p>
+</div>
+<div class="text-[11px] text-cyber-emerald font-semibold relative z-10 flex items-center justify-between pt-1 border-t border-obsidian-border/50">
+<span class="flex items-center gap-1">Proof Verified ✓</span>
+<span class="text-[9px] bg-cyber-amber/20 text-cyber-amber px-1.5 py-0.5 rounded font-mono">ACTIVE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Middle Section: Dual Cockpit Telemetry circular gauges -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+<!-- Gauge 1: ZENI Liquid Capacity & Sink Meter -->
+<div class="bg-obsidian-panel border border-obsidian-border rounded-3xl p-5 md:p-6 shadow-panel chart-hover relative flex flex-col justify-between">
+<!-- Gauge Header -->
+<div class="flex items-start justify-between pb-3 border-b border-obsidian-border">
+<div>
+<h3 class="text-base font-bold text-white flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-cyber-cyan"></span>
+<span>ZENI Liquid Capacity &amp; Sink Meter</span>
+</h3>
+<p class="text-xs text-slate-400 mt-0.5">Max Allocation Cap vs. Course Enrollment Burn</p>
+</div>
+<span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30" id="zeni-cap-badge">
+              Cap: 17,800 ZENI
+            </span>
+</div>
+<!-- Dual Visual + Actions -->
+<div class="my-4 flex flex-col sm:flex-row items-center justify-around gap-6">
+<div class="relative w-44 h-44 shrink-0 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90 drop-shadow" viewbox="0 0 160 160">
+<!-- Background Track -->
+<circle cx="80" cy="80" fill="transparent" r="62" stroke="#1f253d" stroke-width="16"></circle>
+<!-- Segment 1: Escrow Locked (42%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-zeni-seg1" r="62" stroke="#6366f1" stroke-dasharray="163.6 389.5" stroke-dashoffset="0" stroke-width="16"></circle>
+<!-- Segment 2: Available Liquid (30%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-zeni-seg2" r="62" stroke="#00f0ff" stroke-dasharray="116.8 389.5" stroke-dashoffset="-163.6" stroke-width="16"></circle>
+<!-- Segment 3: Capacity Sink Burned (18%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-zeni-seg3" r="62" stroke="#f59e0b" stroke-dasharray="70.1 389.5" stroke-dashoffset="-280.4" stroke-width="16"></circle>
+<!-- Segment 4: Pending Payout (10%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-zeni-seg4" r="62" stroke="#2d3556" stroke-dasharray="38.9 389.5" stroke-dashoffset="-350.5" stroke-width="16"></circle>
+</svg>
+<!-- Center Gauge Metric -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+<span class="text-3xl font-extrabold text-white tracking-tight font-mono" id="zeni-gauge-pct">72%</span>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Liquid Reserve</span>
+<span class="text-[10px] font-mono text-cyber-cyan font-semibold mt-0.5" id="zeni-gauge-total">12,850 ZENI Total</span>
+</div>
+</div>
+<div class="flex-1 w-full sm:w-auto space-y-2 text-xs">
+<div class="p-2.5 rounded-xl bg-obsidian-card border border-obsidian-border text-slate-300">
+<p class="font-bold text-white text-[11px]">Dynamic Capacity Burn:</p>
+<p class="text-[10px] text-slate-400 mt-0.5">
+                  Graph fills with max holding. Burning ZENI on TMS classroom slots frees up allocation bandwidth.
+                </p>
+</div>
+<div class="flex flex-col gap-1.5 pt-0.5">
+<button class="text-[11px] px-2.5 py-1.5 rounded-lg bg-cyber-amber/10 text-cyber-amber border border-cyber-amber/30 hover:bg-cyber-amber/20 transition-all font-mono font-medium flex items-center justify-between cursor-pointer" onclick="simulateZeniBurn()">
+<span>🔥 -500 ZENI TMS Burn</span>
+<span class="text-[9px] uppercase font-bold text-cyber-amber bg-cyber-amber/20 px-1 rounded">Simulate</span>
+</button>
+<button class="text-[11px] px-2.5 py-1.5 rounded-lg bg-cyber-emerald/10 text-cyber-emerald border border-cyber-emerald/30 hover:bg-cyber-emerald/20 transition-all font-mono font-medium flex items-center justify-between cursor-pointer" onclick="simulateZeniPayout()">
+<span>💰 +450 ZENI Bounty</span>
+<span class="text-[9px] uppercase font-bold text-cyber-emerald bg-cyber-emerald/20 px-1 rounded">Claim</span>
+</button>
+<button class="text-[11px] px-2.5 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all font-mono font-medium flex items-center justify-between cursor-pointer" onclick="simulateZeniStake()">
+<span>🔒 Stake 1,000 ZENI</span>
+<span class="text-[9px] uppercase font-bold text-indigo-300 bg-indigo-500/20 px-1 rounded">Lock</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Breakdown Legend Grid -->
+<div class="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 border-t border-obsidian-border text-xs">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Escrow Locked:</span>
+<p class="font-bold text-white font-mono text-xs" id="zeni-legend-locked">42% (5,400 ZENI)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-cyber-cyan shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Available Liquid:</span>
+<p class="font-bold text-white font-mono text-xs" id="zeni-legend-liquid">30% (3,850 ZENI)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-cyber-amber shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Capacity Sink Burn:</span>
+<p class="font-bold text-white font-mono text-xs" id="zeni-legend-burn">18% (2,300 ZENI)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Pending Payout:</span>
+<p class="font-bold text-white font-mono text-xs" id="zeni-legend-pending">10% (1,300 ZENI)</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Gauge 2: MANA / XP Reputation & Rank Progression Meter -->
+<div class="bg-obsidian-panel border border-obsidian-border rounded-3xl p-5 md:p-6 shadow-panel chart-hover relative flex flex-col justify-between">
+<!-- Gauge Header -->
+<div class="flex items-start justify-between pb-3 border-b border-obsidian-border">
+<div>
+<h3 class="text-base font-bold text-white flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-cyber-emerald"></span>
+<span>MANA / XP Sovereign Proof</span>
+</h3>
+<p class="text-xs text-slate-400 mt-0.5">Threshold Gate to Rank D &amp; Validator Quorum</p>
+</div>
+<span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-cyber-emerald/10 text-cyber-emerald border border-cyber-emerald/30" id="mana-target-badge">
+              Target: 1,000 XP
+            </span>
+</div>
+<!-- Dual Visual + Actions -->
+<div class="my-4 flex flex-col sm:flex-row items-center justify-around gap-6">
+<div class="relative w-44 h-44 shrink-0 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90 drop-shadow" viewbox="0 0 160 160">
+<!-- Background Track -->
+<circle cx="80" cy="80" fill="transparent" r="62" stroke="#1f253d" stroke-width="16"></circle>
+<!-- Segment 1: Code Submissions (45%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-mana-seg1" r="62" stroke="#10b981" stroke-dasharray="175.2 389.5" stroke-dashoffset="0" stroke-width="16"></circle>
+<!-- Segment 2: Peer Review Quorum (25%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-mana-seg2" r="62" stroke="#8b5cf6" stroke-dasharray="97.4 389.5" stroke-dashoffset="-175.2" stroke-width="16"></circle>
+<!-- Segment 3: Workshop Attendance (15%) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-mana-seg3" r="62" stroke="#00f0ff" stroke-dasharray="58.4 389.5" stroke-dashoffset="-272.6" stroke-width="16"></circle>
+<!-- Segment 4: Required for Next Rank (15% gap) -->
+<circle class="donut-segment" cx="80" cy="80" fill="transparent" id="donut-mana-seg4" r="62" stroke="#2d3556" stroke-dasharray="58.4 389.5" stroke-dashoffset="-331.0" stroke-width="16"></circle>
+</svg>
+<!-- Center Gauge Metric -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+<span class="text-3xl font-extrabold text-white tracking-tight font-mono" id="mana-gauge-pct">85%</span>
+<span class="text-[10px] font-bold text-cyber-emerald uppercase tracking-wider" id="mana-gauge-role-gate">Rank D Gate</span>
+<span class="text-[10px] font-mono text-slate-400 font-semibold mt-0.5" id="mana-gauge-total">850 / 1,000 XP</span>
+</div>
+</div>
+<div class="flex-1 w-full sm:w-auto space-y-2 text-xs">
+<div class="p-2.5 rounded-xl bg-obsidian-card border border-obsidian-border text-slate-300">
+<p class="font-bold text-white text-[11px]">Sovereign Proofs:</p>
+<p class="text-[10px] text-slate-400 mt-0.5" id="mana-explanatory-note">
+                  150 XP remaining until automatic promotion to Rank D Specialist with higher voting quorum weight.
+                </p>
+</div>
+<div class="flex flex-col gap-1.5 pt-0.5">
+<button class="text-[11px] px-2.5 py-1.5 rounded-lg bg-cyber-violet/10 text-purple-300 border border-cyber-violet/30 hover:bg-cyber-violet/20 transition-all font-mono font-medium flex items-center justify-between cursor-pointer" onclick="simulateManaXPReview()">
+<span>✨ +150 MANA Review</span>
+<span class="text-[9px] uppercase font-bold text-purple-300 bg-purple-500/20 px-1 rounded">Sign Quorum</span>
+</button>
+<button class="text-[11px] px-2.5 py-1.5 rounded-lg bg-cyber-emerald/10 text-cyber-emerald border border-cyber-emerald/30 hover:bg-cyber-emerald/20 transition-all font-mono font-medium flex items-center justify-between cursor-pointer" onclick="openProofModal()">
+<span>📜 Submit PR (+100 XP)</span>
+<span class="text-[9px] uppercase font-bold text-cyber-emerald bg-cyber-emerald/20 px-1 rounded">PoW</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Breakdown Legend Grid -->
+<div class="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 border-t border-obsidian-border text-xs">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-cyber-emerald shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Code Submissions:</span>
+<p class="font-bold text-white font-mono text-xs" id="mana-legend-code">45% (450 XP)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Peer Review Quorum:</span>
+<p class="font-bold text-white font-mono text-xs" id="mana-legend-peer">25% (250 XP)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-cyber-cyan shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]">Workshops &amp; Labs:</span>
+<p class="font-bold text-white font-mono text-xs" id="mana-legend-workshops">15% (150 XP)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0"></span>
+<div>
+<span class="text-slate-400 text-[11px]" id="mana-legend-rem-label">Required for Rank D:</span>
+<p class="font-bold text-white font-mono text-xs" id="mana-legend-remaining">15% (150 XP Left)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Terminal-Style Interactive Ledger -->
+<section class="bg-obsidian-panel border border-obsidian-border rounded-3xl p-5 md:p-6 shadow-panel">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-obsidian-border gap-3">
+<div>
+<div class="flex items-center gap-2">
+<span class="text-cyber-cyan font-mono text-xs font-bold">$ LEDGER_FEED</span>
+<span class="text-slate-600">•</span>
+<h3 class="text-base font-bold text-white tracking-tight">Last Activity &amp; Ledger Proofs</h3>
+</div>
+<p class="text-xs text-slate-400 mt-0.5">Cryptographically signed deliverables and student capacity updates</p>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<select class="text-xs font-mono font-semibold text-slate-200 bg-obsidian-card border border-obsidian-border hover:border-cyber-cyan/50 px-3 py-1.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyber-cyan cursor-pointer" id="ledger-filter-select" onchange="filterLedgerByType(this.value)">
+<option value="ALL">All Transactions</option>
+<option value="ZENI">ZENI Transfers</option>
+<option value="MANA">MANA / XP Rep</option>
+<option value="ESCROW">Escrow Locks</option>
+<option value="BURN">Capacity Burns</option>
+</select>
+<button class="text-xs font-semibold text-cyber-cyan bg-cyber-cyan/10 hover:bg-cyber-cyan/20 px-3 py-1.5 rounded-xl border border-cyber-cyan/30 transition-all flex items-center gap-1.5 cursor-pointer" onclick="openProofModal()">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path></svg>
+<span>New Task Proof</span>
+</button>
+</div>
+</div>
+<!-- Activity Rows in Dark Command Center Format -->
+<div class="mt-3 divide-y divide-obsidian-border/60 font-sans" id="ledger-items-container">
+<!-- Item 1: OAuth2 PKCE Flow -->
+<div class="ledger-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-obsidian-card/60 rounded-xl px-3 -mx-3 transition-all cursor-pointer group" data-tx-type="ZENI,MANA" onclick="openProofModal()">
+<div class="flex items-center gap-3.5">
+<div class="w-9 h-9 rounded-xl bg-cyber-emerald/15 text-cyber-emerald border border-cyber-emerald/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h4 class="text-xs sm:text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors">OAuth2 PKCE Flow PR #42</h4>
+<p class="text-[11px] text-slate-400">Approved by Priya Patel • <span class="text-cyber-emerald font-mono font-medium">+450 ZENI, +150 MANA XP</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 self-end sm:self-center">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">PP</div>
+<div class="w-6 h-6 rounded-full bg-cyber-cyan text-slate-950 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">RV</div>
+<div class="w-6 h-6 rounded-full bg-obsidian-hover text-slate-300 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">+3</div>
+</div>
+<span class="text-xs font-mono text-slate-500 min-w-[75px] text-right">Nov 7, 2024</span>
+</div>
+</div>
+<!-- Item 2: Next.js TMS Batch #3 Enrollment -->
+<div class="ledger-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-obsidian-card/60 rounded-xl px-3 -mx-3 transition-all cursor-pointer group" data-tx-type="BURN,ZENI">
+<div class="flex items-center gap-3.5">
+<div class="w-9 h-9 rounded-xl bg-cyber-amber/15 text-cyber-amber border border-cyber-amber/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h4 class="text-xs sm:text-sm font-semibold text-white group-hover:text-cyber-amber transition-colors">Next.js TMS Batch #3 Enrollment</h4>
+<p class="text-[11px] text-slate-400">Capacity burn unlocked • <span class="text-cyber-amber font-mono font-medium">-500 ZENI (Expanded to +20 Seats)</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 self-end sm:self-center">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">AS</div>
+<div class="w-6 h-6 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">TMS</div>
+</div>
+<span class="text-xs font-mono text-slate-500 min-w-[75px] text-right">Nov 8, 2024</span>
+</div>
+</div>
+<!-- Item 3: NovaTech Microservices Audit -->
+<div class="ledger-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-obsidian-card/60 rounded-xl px-3 -mx-3 transition-all cursor-pointer group" data-tx-type="ESCROW,ZENI">
+<div class="flex items-center gap-3.5">
+<div class="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h4 class="text-xs sm:text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors">NovaTech Microservices Audit</h4>
+<p class="text-[11px] text-slate-400">Milestone 2 Escrow Release • <span class="text-indigo-400 font-mono font-medium">+2,400 ZENI (Verified Quorum)</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 self-end sm:self-center">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">NT</div>
+<div class="w-6 h-6 rounded-full bg-cyber-cyan text-slate-950 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">RV</div>
+<div class="w-6 h-6 rounded-full bg-obsidian-hover text-slate-300 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">+8</div>
+</div>
+<span class="text-xs font-mono text-slate-500 min-w-[75px] text-right">Nov 9, 2024</span>
+</div>
+</div>
+<!-- Item 4: Rust WebRTC Signaling Mesh -->
+<div class="ledger-row py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-obsidian-card/60 rounded-xl px-3 -mx-3 transition-all cursor-pointer group" data-tx-type="MANA">
+<div class="flex items-center gap-3.5">
+<div class="w-9 h-9 rounded-xl bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h4 class="text-xs sm:text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors">Rust WebRTC Signaling Mesh</h4>
+<p class="text-[11px] text-slate-400">Mentee peer review consensus • <span class="text-cyber-cyan font-mono font-medium">+100 MANA XP Reputation</span></p>
+</div>
+</div>
+<div class="flex items-center gap-5 self-end sm:self-center">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-slate-700 text-white flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">CF</div>
+<div class="w-6 h-6 rounded-full bg-cyber-emerald text-slate-950 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">RV</div>
+</div>
+<span class="text-xs font-mono text-slate-500 min-w-[75px] text-right">Nov 9, 2024</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- BEGIN: Modal 1 - New Bounty & Lock Escrow -->
+<div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4" id="modal-bounty">
+<div class="bg-obsidian-panel border border-cyber-amber/40 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-glow-amber relative animate-in fade-in zoom-in-95 duration-200">
+<div class="flex items-center justify-between pb-4 border-b border-obsidian-border">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl bg-cyber-amber/15 text-cyber-amber border border-cyber-amber/30 flex items-center justify-center font-bold">
+          🔒
+        </div>
+<div>
+<h3 class="text-base font-bold text-white">Lock Bounty Escrow</h3>
+<p class="text-xs text-slate-400">Deploy cryptographic timelocked reward pool</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full bg-obsidian-card hover:bg-obsidian-hover text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer" onclick="closeBountyModal()">✕</button>
+</div>
+<!-- Quick Presets -->
+<div class="mt-4">
+<label class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1.5">Quick Presets</label>
+<div class="flex gap-2 flex-wrap">
+<button class="text-xs bg-obsidian-card hover:bg-cyber-amber/20 hover:text-cyber-amber border border-obsidian-border px-3 py-1.5 rounded-xl font-medium transition-all text-slate-300" onclick="setBountyPreset('NovaTech AI Workflow Audit', 'NovaTech Labs', 60000, '3 of 5', 'Rank C')" type="button">
+          NovaTech AI (60k ZENI)
+        </button>
+<button class="text-xs bg-obsidian-card hover:bg-cyber-amber/20 hover:text-cyber-amber border border-obsidian-border px-3 py-1.5 rounded-xl font-medium transition-all text-slate-300" onclick="setBountyPreset('Solana Micro-Indexer Node', 'CyberForge DAO', 15000, '2 of 3', 'Rank D')" type="button">
+          Solana Indexer (15k ZENI)
+        </button>
+</div>
+</div>
+<form class="mt-4 space-y-3.5" onsubmit="handleBountySubmit(event)">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Bounty Deliverable Title</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-amber focus:outline-none text-white" id="input-bounty-title" placeholder="e.g. Zero-Knowledge Prover Circuit Optimization" required="" value="NovaTech AI Workflow Engine"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Corporate Sponsor</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-amber focus:outline-none text-white" id="input-bounty-sponsor" required="" value="NovaTech Labs"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Escrow Lock (ZENI)</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-amber focus:outline-none text-white font-mono" id="input-bounty-amount" required="" type="number" value="60000"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Multisig Quorum Gate</label>
+<select class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-amber focus:outline-none text-white" id="input-bounty-quorum">
+<option>3 of 5 Lead Validators</option>
+<option>2 of 3 Peer Reviewers</option>
+<option>Single Sponsor Apex</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Target Rank Gate</label>
+<select class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-amber focus:outline-none text-white" id="input-bounty-rank">
+<option>Rank C &amp; Above</option>
+<option>Rank D Specialist</option>
+<option>Rank E Open Apprentice</option>
+</select>
+</div>
+</div>
+<div class="p-3 bg-cyber-amber/10 rounded-xl border border-cyber-amber/30 flex items-start gap-2.5 text-xs text-amber-200">
+<span class="text-cyber-amber font-bold">ℹ️</span>
+<p class="leading-relaxed">Escrow tokens will be locked in the Arbitrum Sepolia timelock vault until quorum signs proof verification.</p>
+</div>
+<div class="pt-3 flex items-center justify-end gap-2.5">
+<button class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white" onclick="closeBountyModal()" type="button">Cancel</button>
+<button class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyber-amber to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-glow-amber transition-all active:scale-95 cursor-pointer" type="submit">
+          Confirm &amp; Lock Timelock Escrow
+        </button>
+</div>
+</form>
+</div>
+</div>
+<!-- END: Modal 1 -->
+<!-- BEGIN: Modal 2 - Proof of Work Submission -->
+<div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4" id="modal-proof">
+<div class="bg-obsidian-panel border border-cyber-cyan/40 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-glow-cyan relative animate-in fade-in zoom-in-95 duration-200">
+<div class="flex items-center justify-between pb-4 border-b border-obsidian-border">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 flex items-center justify-center font-bold">
+          📜
+        </div>
+<div>
+<h3 class="text-base font-bold text-white">Submit Cryptographic Proof</h3>
+<p class="text-xs text-slate-400">Sign GitHub deliverable &amp; earn +450 ZENI, +150 MANA XP</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full bg-obsidian-card hover:bg-obsidian-hover text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer" onclick="closeProofModal()">✕</button>
+</div>
+<form class="mt-4 space-y-3.5" onsubmit="handleProofSubmit(event)">
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">GitHub Pull Request URL</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-cyan focus:outline-none font-mono text-white" id="input-proof-pr" placeholder="https://github.com/cyberforge/protocol/pull/88" required="" value="https://github.com/cyberforge-dao/core/pull/54"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Live Staging / RPC Preview</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-cyan focus:outline-none font-mono text-white" id="input-proof-staging" placeholder="https://staging.mesh-rpc.internal" value="https://sepolia-validator.meritforge.xyz"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Loom / Screen Walkthrough (Optional)</label>
+<input class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-cyan focus:outline-none text-white" id="input-proof-loom" placeholder="https://www.loom.com/share/..."/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-300 mb-1">Architecture Notes &amp; Hashes</label>
+<textarea class="w-full text-xs px-3.5 py-2 rounded-xl bg-obsidian-card border border-obsidian-border focus:ring-1 focus:ring-cyber-cyan focus:outline-none text-white" id="input-proof-notes" placeholder="Describe cryptographic proof verification steps..." rows="2">Implemented PKCE exchange with state verification and unit test coverage &gt; 94%.</textarea>
+</div>
+<!-- Simulation progress bar -->
+<div class="hidden space-y-1.5 pt-1" id="proof-progress-wrap">
+<div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+<span id="proof-hash-status">Generating SHA-256 state hash...</span>
+<span class="text-cyber-cyan font-bold" id="proof-hash-val">0x8f...4e19</span>
+</div>
+<div class="w-full bg-obsidian-card rounded-full h-2 overflow-hidden border border-obsidian-border">
+<div class="bg-gradient-to-r from-cyber-cyan to-cyber-emerald h-full w-0 transition-all duration-700" id="proof-bar"></div>
+</div>
+</div>
+<div class="pt-3 flex items-center justify-end gap-2.5">
+<button class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white" onclick="closeProofModal()" type="button">Cancel</button>
+<button class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-bold text-xs shadow-glow-cyan transition-all active:scale-95 cursor-pointer" id="btn-submit-proof" type="submit">
+          Sign &amp; Submit Proof
+        </button>
+</div>
+</form>
+</div>
+</div>
+<!-- END: Modal 2 -->
+<!-- BEGIN: Reactive Role & Simulator Logic -->
+<script data-purpose="role-simulation">
+  // Circumference of circles: 2 * Math.PI * 62 ≈ 389.55
+  const CIRCLE_CIRCUMFERENCE = 389.55;
+
+  // Complete 6 Persona State Objects with Exact Identical Data
+  const roles = {
+    rohan: {
+      name: "Rohan Verma",
+      role: "Rank E Apprentice",
+      guild: "Guild ID: #CYBER-0492",
+      avatarInitials: "RV",
+      activeTasks: "8 / 10 Complete",
+      guildQuorum: "CyberForge #04",
+      standing: "Top 8% Contributor",
+      escrowBadge: "ES-60K",
+      escrowAmount: "60,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 17800,
+      zeniTotal: 12850,
+      zeniPct: 72,
+      segZeniLocked: 42,
+      segZeniLiquid: 30,
+      segZeniBurn: 18,
+      segZeniPending: 10,
+      // MANA XP Reputation
+      manaTarget: 1000,
+      manaTotal: 850,
+      manaPct: 85,
+      manaGateLabel: "Rank D Gate",
+      manaExplanatory: "150 XP remaining until automatic promotion to Rank D Specialist with higher voting quorum weight.",
+      segManaCode: 45,
+      segManaPeer: 25,
+      segManaLabs: 15,
+      segManaRem: 15
+    },
+    aarav: {
+      name: "Aarav Sharma",
+      role: "Rank D Peer Teacher",
+      guild: "Guild ID: #CYBER-0211",
+      avatarInitials: "AS",
+      activeTasks: "14 / 15 Complete",
+      guildQuorum: "CyberForge #02",
+      standing: "Top 4% Validator",
+      escrowBadge: "ES-95K",
+      escrowAmount: "95,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 25000,
+      zeniTotal: 18500,
+      zeniPct: 88,
+      segZeniLocked: 48,
+      segZeniLiquid: 32,
+      segZeniBurn: 12,
+      segZeniPending: 8,
+      // MANA XP Reputation
+      manaTarget: 2500,
+      manaTotal: 2450,
+      manaPct: 98,
+      manaGateLabel: "Rank C Gate",
+      manaExplanatory: "Only 50 XP remaining to unlock Rank C Lead Validator and multisig vote delegation!",
+      segManaCode: 50,
+      segManaPeer: 30,
+      segManaLabs: 14,
+      segManaRem: 6
+    },
+    priya: {
+      name: "Priya Patel",
+      role: "Rank C Mentor & Leader",
+      guild: "Guild ID: #CYBER-0014",
+      avatarInitials: "PP",
+      activeTasks: "29 / 30 Verified",
+      guildQuorum: "Quorum Apex #01",
+      standing: "Lead Consensus Signer",
+      escrowBadge: "ES-210K",
+      escrowAmount: "210,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 50000,
+      zeniTotal: 45200,
+      zeniPct: 94,
+      segZeniLocked: 55,
+      segZeniLiquid: 30,
+      segZeniBurn: 10,
+      segZeniPending: 5,
+      // MANA XP Reputation
+      manaTarget: 6000,
+      manaTotal: 5800,
+      manaPct: 94,
+      manaGateLabel: "Master Gate",
+      manaExplanatory: "Full governance quorum weight (12x). Eligible to mint enterprise course syllabi.",
+      segManaCode: 55,
+      segManaPeer: 30,
+      segManaLabs: 10,
+      segManaRem: 5
+    },
+    rahul: {
+      name: "Rahul Mehta",
+      role: "Rank B Senior Tech Lead",
+      guild: "Guild ID: #CYBER-0003",
+      avatarInitials: "RM",
+      activeTasks: "42 / 42 Verified",
+      guildQuorum: "Cluster Core #01",
+      standing: "Master Architecture Lead",
+      escrowBadge: "ES-450K",
+      escrowAmount: "450,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 100000,
+      zeniTotal: 92000,
+      zeniPct: 96,
+      segZeniLocked: 60,
+      segZeniLiquid: 26,
+      segZeniBurn: 10,
+      segZeniPending: 4,
+      // MANA XP Reputation
+      manaTarget: 15000,
+      manaTotal: 12400,
+      manaPct: 96,
+      manaGateLabel: "Rank A Gate",
+      manaExplanatory: "Senior multi-sig architect authorized for treasury deployment.",
+      segManaCode: 60,
+      segManaPeer: 26,
+      segManaLabs: 10,
+      segManaRem: 4
+    },
+    novatech: {
+      name: "NovaTech Labs",
+      role: "Corporate Sponsor Node",
+      guild: "Entity ID: #CORP-9021",
+      avatarInitials: "NT",
+      activeTasks: "6 Active Grants",
+      guildQuorum: "Enterprise Sinks",
+      standing: "Verified Escrow Funder",
+      escrowBadge: "ES-1.2M",
+      escrowAmount: "240,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 500000,
+      zeniTotal: 240000,
+      zeniPct: 65,
+      segZeniLocked: 75,
+      segZeniLiquid: 20,
+      segZeniBurn: 5,
+      segZeniPending: 0,
+      // MANA XP Reputation
+      manaTarget: 0,
+      manaTotal: 0,
+      manaPct: 100,
+      manaGateLabel: "Corporate Node",
+      manaExplanatory: "Corporate entities fund escrow vaults and burn ZENI for bespoke talent pipelines.",
+      segManaCode: 0,
+      segManaPeer: 0,
+      segManaLabs: 0,
+      segManaRem: 0
+    },
+    admin: {
+      name: "Dr. Rajesh Iyer",
+      role: "Super Admin / Dean",
+      guild: "Authority: #APEX-ROOT",
+      avatarInitials: "RI",
+      activeTasks: "Full Ledger Access",
+      guildQuorum: "Global DAO Council",
+      standing: "Academic Protocol Head",
+      escrowBadge: "ES-5.0M",
+      escrowAmount: "1,500,000 ZENI",
+      // ZENI Tokenomics
+      zeniCap: 2000000,
+      zeniTotal: 1500000,
+      zeniPct: 99,
+      segZeniLocked: 50,
+      segZeniLiquid: 40,
+      segZeniBurn: 5,
+      segZeniPending: 5,
+      // MANA XP Reputation
+      manaTarget: 50000,
+      manaTotal: 49800,
+      manaPct: 99,
+      manaGateLabel: "Governance Apex",
+      manaExplanatory: "Super Administrator with master multi-signature override keys and smart treasury authority.",
+      segManaCode: 50,
+      segManaPeer: 30,
+      segManaLabs: 15,
+      segManaRem: 5
+    }
+  };
+
+  let currentRoleKey = 'rohan';
+
+  // Helper to recompute and apply SVG stroke attributes for donut segments
+  function renderDonut(seg1Id, seg2Id, seg3Id, seg4Id, p1, p2, p3, p4) {
+    const c = CIRCLE_CIRCUMFERENCE;
+    const len1 = (p1 / 100) * c;
+    const len2 = (p2 / 100) * c;
+    const len3 = (p3 / 100) * c;
+    const len4 = (p4 / 100) * c;
+
+    const s1 = document.getElementById(seg1Id);
+    const s2 = document.getElementById(seg2Id);
+    const s3 = document.getElementById(seg3Id);
+    const s4 = document.getElementById(seg4Id);
+
+    if (s1) {
+      s1.setAttribute('stroke-dasharray', `${len1.toFixed(1)} ${c}`);
+      s1.setAttribute('stroke-dashoffset', '0');
+    }
+    if (s2) {
+      s2.setAttribute('stroke-dasharray', `${len2.toFixed(1)} ${c}`);
+      s2.setAttribute('stroke-dashoffset', `-${len1.toFixed(1)}`);
+    }
+    if (s3) {
+      s3.setAttribute('stroke-dasharray', `${len3.toFixed(1)} ${c}`);
+      s3.setAttribute('stroke-dashoffset', `-${(len1 + len2).toFixed(1)}`);
+    }
+    if (s4) {
+      s4.setAttribute('stroke-dasharray', `${len4.toFixed(1)} ${c}`);
+      s4.setAttribute('stroke-dashoffset', `-${(len1 + len2 + len3).toFixed(1)}`);
+    }
+  }
+
+  function switchRole(roleKey) {
+    const selected = roles[roleKey];
+    if (!selected) return;
+    currentRoleKey = roleKey;
+
+    // Update Top Navigation Pills
+    const keys = ['rohan', 'aarav', 'priya', 'rahul', 'novatech', 'admin'];
+    keys.forEach(k => {
+      const btn = document.getElementById(`btn-role-${k}`);
+      if (btn) {
+        if (k === roleKey) {
+          btn.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyber-cyan text-slate-950 shadow-sm transition-all cursor-pointer";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-card text-slate-300 hover:text-white hover:bg-obsidian-hover border border-obsidian-border transition-all cursor-pointer";
+        }
+      }
+    });
+
+    // Update Sidebar Profile Details
+    document.getElementById('current-user-name').innerText = selected.name;
+    document.getElementById('current-user-role').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyber-cyan animate-pulse"></span> ${selected.role}`;
+    document.getElementById('current-user-guild').innerText = selected.guild;
+    document.getElementById('current-user-avatar').innerText = selected.avatarInitials;
+
+    // Update Floating Cards
+    document.getElementById('card-active-tasks-stat').innerText = selected.activeTasks;
+    document.getElementById('card-guild-quorum-stat').innerText = selected.guildQuorum;
+    document.getElementById('card-standing-rank').innerText = selected.standing;
+    document.getElementById('card-escrow-badge').innerText = selected.escrowBadge;
+    document.getElementById('card-escrow-amount').innerText = selected.escrowAmount;
+
+    // Update Graph 1: ZENI Liquid Capacity
+    document.getElementById('zeni-cap-badge').innerText = `Cap: ${selected.zeniCap.toLocaleString()} ZENI`;
+    document.getElementById('zeni-gauge-pct').innerText = `${selected.zeniPct}%`;
+    document.getElementById('zeni-gauge-total').innerText = `${selected.zeniTotal.toLocaleString()} ZENI Total`;
+    document.getElementById('zeni-legend-locked').innerText = `${selected.segZeniLocked}% (${Math.round(selected.zeniTotal * selected.segZeniLocked / 100).toLocaleString()} ZENI)`;
+    document.getElementById('zeni-legend-liquid').innerText = `${selected.segZeniLiquid}% (${Math.round(selected.zeniTotal * selected.segZeniLiquid / 100).toLocaleString()} ZENI)`;
+    document.getElementById('zeni-legend-burn').innerText = `${selected.segZeniBurn}% (${Math.round(selected.zeniTotal * selected.segZeniBurn / 100).toLocaleString()} ZENI)`;
+    document.getElementById('zeni-legend-pending').innerText = `${selected.segZeniPending}% (${Math.round(selected.zeniTotal * selected.segZeniPending / 100).toLocaleString()} ZENI)`;
+
+    renderDonut(
+      'donut-zeni-seg1', 'donut-zeni-seg2', 'donut-zeni-seg3', 'donut-zeni-seg4',
+      selected.segZeniLocked, selected.segZeniLiquid, selected.segZeniBurn, selected.segZeniPending
+    );
+
+    // Update Graph 2: MANA XP Sovereign Proof
+    if (selected.manaTarget > 0) {
+      document.getElementById('mana-target-badge').innerText = `Target: ${selected.manaTarget.toLocaleString()} XP`;
+      document.getElementById('mana-gauge-pct').innerText = `${selected.manaPct}%`;
+      document.getElementById('mana-gauge-role-gate').innerText = selected.manaGateLabel;
+      document.getElementById('mana-gauge-total').innerText = `${selected.manaTotal.toLocaleString()} / ${selected.manaTarget.toLocaleString()} XP`;
+      document.getElementById('mana-explanatory-note').innerText = selected.manaExplanatory;
+
+      document.getElementById('mana-legend-code').innerText = `${selected.segManaCode}% (${Math.round(selected.manaTarget * selected.segManaCode / 100).toLocaleString()} XP)`;
+      document.getElementById('mana-legend-peer').innerText = `${selected.segManaPeer}% (${Math.round(selected.manaTarget * selected.segManaPeer / 100).toLocaleString()} XP)`;
+      document.getElementById('mana-legend-workshops').innerText = `${selected.segManaLabs}% (${Math.round(selected.manaTarget * selected.segManaLabs / 100).toLocaleString()} XP)`;
+      document.getElementById('mana-legend-rem-label').innerText = `Required for ${selected.manaGateLabel}:`;
+      document.getElementById('mana-legend-remaining').innerText = `${selected.segManaRem}% (${Math.round(selected.manaTarget * selected.segManaRem / 100).toLocaleString()} XP Left)`;
+
+      renderDonut(
+        'donut-mana-seg1', 'donut-mana-seg2', 'donut-mana-seg3', 'donut-mana-seg4',
+        selected.segManaCode, selected.segManaPeer, selected.segManaLabs, selected.segManaRem
+      );
+    } else {
+      // Corporate Node has no student XP requirements
+      document.getElementById('mana-target-badge').innerText = `Corporate Sponsor`;
+      document.getElementById('mana-gauge-pct').innerText = `100%`;
+      document.getElementById('mana-gauge-role-gate').innerText = selected.manaGateLabel;
+      document.getElementById('mana-gauge-total').innerText = `Enterprise Node`;
+      document.getElementById('mana-explanatory-note').innerText = selected.manaExplanatory;
+      renderDonut('donut-mana-seg1', 'donut-mana-seg2', 'donut-mana-seg3', 'donut-mana-seg4', 85, 10, 5, 0);
+    }
+
+    showToast(`Switched view to persona: ${selected.name} (${selected.role})`, 'info');
+  }
+
+  // Toast Notification System
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const borderClass = type === 'success' ? 'border-cyber-emerald/60 text-cyber-emerald' :
+                        type === 'amber' ? 'border-cyber-amber/60 text-cyber-amber' :
+                        'border-cyber-cyan/60 text-cyber-cyan';
+    
+    toast.className = `bg-obsidian-surface ${borderClass} border rounded-2xl shadow-2xl px-4 py-3 text-xs flex items-center gap-2.5 backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+    toast.innerHTML = `
+      <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-cyber-emerald' : type === 'amber' ? 'bg-cyber-amber' : 'bg-cyber-cyan'} animate-pulse"></span>
+      <span class="font-medium text-slate-100">${message}</span>
+    `;
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-2', 'opacity-0');
+    });
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', '-translate-y-2');
+      setTimeout(() => toast.remove(), 350);
+    }, 4000);
+  }
+
+  // Ledger item addition helper
+  function prependLedgerRow({ title, subtitle, iconType, iconBg, iconColor, txType, dateStr, tags = 'RV' }) {
+    const container = document.getElementById('ledger-items-container');
+    const row = document.createElement('div');
+    row.dataset.txType = txType;
+    row.className = `ledger-row animate-flash py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-obsidian-card/60 rounded-xl px-3 -mx-3 transition-all cursor-pointer group`;
+    row.onclick = () => openProofModal();
+
+    row.innerHTML = `
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shrink-0 border border-obsidian-border group-hover:scale-105 transition-transform shadow-inner">
+          ${iconType}
+        </div>
+        <div>
+          <h4 class="text-xs sm:text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors">${title}</h4>
+          <p class="text-[11px] text-slate-400">${subtitle}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-5 self-end sm:self-center">
+        <div class="flex -space-x-2">
+          <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">${tags}</div>
+          <div class="w-6 h-6 rounded-full bg-cyber-cyan text-slate-950 flex items-center justify-center text-[9px] font-bold border-2 border-obsidian-panel">MF</div>
+        </div>
+        <span class="text-xs font-mono text-slate-500 min-w-[75px] text-right">${dateStr}</span>
+      </div>
+    `;
+
+    container.prepend(row);
+  }
+
+  // Simulation: Burn ZENI on TMS Classroom
+  function simulateZeniBurn() {
+    const cur = roles[currentRoleKey];
+    if (cur.zeniTotal < 500) {
+      showToast('Insufficient ZENI liquid balance to burn!', 'amber');
+      return;
+    }
+    cur.zeniTotal -= 500;
+    cur.segZeniBurn = Math.min(45, cur.segZeniBurn + 4);
+    cur.segZeniLiquid = Math.max(10, cur.segZeniLiquid - 4);
+    cur.zeniPct = Math.round((cur.zeniTotal / cur.zeniCap) * 100);
+
+    // Update live DOM
+    document.getElementById('zeni-gauge-total').innerText = `${cur.zeniTotal.toLocaleString()} ZENI Total`;
+    document.getElementById('zeni-gauge-pct').innerText = `${cur.zeniPct}%`;
+    document.getElementById('zeni-legend-burn').innerText = `${cur.segZeniBurn}% (${Math.round(cur.zeniTotal * cur.segZeniBurn / 100).toLocaleString()} ZENI)`;
+    document.getElementById('zeni-legend-liquid').innerText = `${cur.segZeniLiquid}% (${Math.round(cur.zeniTotal * cur.segZeniLiquid / 100).toLocaleString()} ZENI)`;
+
+    renderDonut(
+      'donut-zeni-seg1', 'donut-zeni-seg2', 'donut-zeni-seg3', 'donut-zeni-seg4',
+      cur.segZeniLocked, cur.segZeniLiquid, cur.segZeniBurn, cur.segZeniPending
+    );
+
+    const flameIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+    
+    prependLedgerRow({
+      title: "Capacity Sink Burn (TMS Cloud Seat)",
+      subtitle: `Burned in smart sink • <span class="text-cyber-amber font-mono font-medium">-500 ZENI (Expanded +20 Capacity)</span>`,
+      iconType: flameIcon,
+      iconBg: "bg-cyber-amber/15",
+      iconColor: "text-cyber-amber",
+      txType: "BURN,ZENI",
+      dateStr: "Just now",
+      tags: cur.avatarInitials
+    });
+
+    showToast("Burned 500 ZENI: TMS capacity expanded by +20 Seats!", "amber");
+  }
+
+  // Simulation: Claim +450 Bounty Payout
+  function simulateZeniPayout() {
+    const cur = roles[currentRoleKey];
+    cur.zeniTotal += 450;
+    cur.segZeniLiquid = Math.min(50, cur.segZeniLiquid + 3);
+    cur.zeniPct = Math.round((cur.zeniTotal / cur.zeniCap) * 100);
+
+    document.getElementById('zeni-gauge-total').innerText = `${cur.zeniTotal.toLocaleString()} ZENI Total`;
+    document.getElementById('zeni-gauge-pct').innerText = `${cur.zeniPct}%`;
+    document.getElementById('zeni-legend-liquid').innerText = `${cur.segZeniLiquid}% (${Math.round(cur.zeniTotal * cur.segZeniLiquid / 100).toLocaleString()} ZENI)`;
+
+    renderDonut(
+      'donut-zeni-seg1', 'donut-zeni-seg2', 'donut-zeni-seg3', 'donut-zeni-seg4',
+      cur.segZeniLocked, cur.segZeniLiquid, cur.segZeniBurn, cur.segZeniPending
+    );
+
+    const coinIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+
+    prependLedgerRow({
+      title: "Bounty Deliverable Release #89",
+      subtitle: `Verified by Quorum • <span class="text-cyber-emerald font-mono font-medium">+450 ZENI Liquid Escrow Payout</span>`,
+      iconType: coinIcon,
+      iconBg: "bg-cyber-emerald/15",
+      iconColor: "text-cyber-emerald",
+      txType: "ZENI",
+      dateStr: "Just now",
+      tags: cur.avatarInitials
+    });
+
+    showToast("Escrow Payout Claimed: +450 ZENI added to Liquid Reserve!", "success");
+  }
+
+  // Simulation: Stake 1,000 ZENI Escrow
+  function simulateZeniStake() {
+    const cur = roles[currentRoleKey];
+    if (cur.zeniTotal < 1000) {
+      showToast('Insufficient liquid ZENI to lock!', 'amber');
+      return;
+    }
+    cur.segZeniLocked = Math.min(65, cur.segZeniLocked + 4);
+    cur.segZeniLiquid = Math.max(10, cur.segZeniLiquid - 4);
+
+    document.getElementById('zeni-legend-locked').innerText = `${cur.segZeniLocked}% (${Math.round(cur.zeniTotal * cur.segZeniLocked / 100).toLocaleString()} ZENI)`;
+    document.getElementById('zeni-legend-liquid').innerText = `${cur.segZeniLiquid}% (${Math.round(cur.zeniTotal * cur.segZeniLiquid / 100).toLocaleString()} ZENI)`;
+
+    renderDonut(
+      'donut-zeni-seg1', 'donut-zeni-seg2', 'donut-zeni-seg3', 'donut-zeni-seg4',
+      cur.segZeniLocked, cur.segZeniLiquid, cur.segZeniBurn, cur.segZeniPending
+    );
+
+    const lockIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+
+    prependLedgerRow({
+      title: "Timelock Staking Deposit",
+      subtitle: `Validator collateral secured • <span class="text-indigo-400 font-mono font-medium">1,000 ZENI Locked in Timelock</span>`,
+      iconType: lockIcon,
+      iconBg: "bg-indigo-500/15",
+      iconColor: "text-indigo-300",
+      txType: "ESCROW,ZENI",
+      dateStr: "Just now",
+      tags: cur.avatarInitials
+    });
+
+    showToast("Collateral Locked: 1,000 ZENI staked to validator quorum", "info");
+  }
+
+  // Simulation: Peer Review MANA XP Gain
+  function simulateManaXPReview() {
+    const cur = roles[currentRoleKey];
+    if (cur.manaTarget === 0) {
+      showToast("Corporate nodes do not hold sovereign peer reputation XP.", "info");
+      return;
+    }
+    cur.manaTotal = Math.min(cur.manaTarget, cur.manaTotal + 150);
+    cur.manaPct = Math.round((cur.manaTotal / cur.manaTarget) * 100);
+    cur.segManaPeer = Math.min(40, cur.segManaPeer + 4);
+    cur.segManaRem = Math.max(0, 100 - (cur.segManaCode + cur.segManaPeer + cur.segManaLabs));
+
+    document.getElementById('mana-gauge-pct').innerText = `${cur.manaPct}%`;
+    document.getElementById('mana-gauge-total').innerText = `${cur.manaTotal.toLocaleString()} / ${cur.manaTarget.toLocaleString()} XP`;
+    document.getElementById('mana-legend-peer').innerText = `${cur.segManaPeer}% (${Math.round(cur.manaTarget * cur.segManaPeer / 100).toLocaleString()} XP)`;
+    document.getElementById('mana-legend-remaining').innerText = `${cur.segManaRem}% (${Math.max(0, cur.manaTarget - cur.manaTotal).toLocaleString()} XP Left)`;
+
+    renderDonut(
+      'donut-mana-seg1', 'donut-mana-seg2', 'donut-mana-seg3', 'donut-mana-seg4',
+      cur.segManaCode, cur.segManaPeer, cur.segManaLabs, cur.segManaRem
+    );
+
+    const starIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+
+    prependLedgerRow({
+      title: "Consensus Quorum Peer Review Signed",
+      subtitle: `Sovereign validator proof verified • <span class="text-indigo-400 font-mono font-medium">+150 MANA XP Reputation</span>`,
+      iconType: starIcon,
+      iconBg: "bg-indigo-500/15",
+      iconColor: "text-indigo-300",
+      txType: "MANA",
+      dateStr: "Just now",
+      tags: cur.avatarInitials
+    });
+
+    showToast("Consensus Quorum Signed: +150 MANA XP awarded!", "success");
+  }
+
+  // Modals management
+  function openBountyModal() {
+    document.getElementById('modal-bounty').classList.remove('hidden');
+    document.getElementById('modal-bounty').classList.add('flex');
+  }
+  function closeBountyModal() {
+    document.getElementById('modal-bounty').classList.add('hidden');
+    document.getElementById('modal-bounty').classList.remove('flex');
+  }
+
+  function setBountyPreset(title, sponsor, amount, quorum, rank) {
+    document.getElementById('input-bounty-title').value = title;
+    document.getElementById('input-bounty-sponsor').value = sponsor;
+    document.getElementById('input-bounty-amount').value = amount;
+  }
+
+  function handleBountySubmit(e) {
+    e.preventDefault();
+    const title = document.getElementById('input-bounty-title').value;
+    const sponsor = document.getElementById('input-bounty-sponsor').value;
+    const amount = Number(document.getElementById('input-bounty-amount').value) || 60000;
+
+    // Update UI card
+    document.getElementById('card-escrow-amount').innerText = `${amount.toLocaleString()} ZENI`;
+
+    const lockIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+
+    prependLedgerRow({
+      title: `${title} (${sponsor})`,
+      subtitle: `New Escrow Locked • <span class="text-indigo-400 font-mono font-medium">${amount.toLocaleString()} ZENI Secured in Timelock</span>`,
+      iconType: lockIcon,
+      iconBg: "bg-indigo-500/15",
+      iconColor: "text-indigo-300",
+      txType: "ESCROW,ZENI",
+      dateStr: "Just now",
+      tags: "NT"
+    });
+
+    closeBountyModal();
+    showToast(`Escrow Locked: ${amount.toLocaleString()} ZENI secured in smart timelock`, "success");
+  }
+
+  function openProofModal() {
+    document.getElementById('modal-proof').classList.remove('hidden');
+    document.getElementById('modal-proof').classList.add('flex');
+  }
+  function closeProofModal() {
+    document.getElementById('modal-proof').classList.add('hidden');
+    document.getElementById('modal-proof').classList.remove('flex');
+  }
+
+  function handleProofSubmit(e) {
+    e.preventDefault();
+    const prUrl = document.getElementById('input-proof-pr').value;
+    const btn = document.getElementById('btn-submit-proof');
+    const wrap = document.getElementById('proof-progress-wrap');
+    const bar = document.getElementById('proof-bar');
+
+    btn.disabled = true;
+    wrap.classList.remove('hidden');
+    bar.style.width = '30%';
+
+    setTimeout(() => {
+      bar.style.width = '80%';
+      document.getElementById('proof-hash-status').innerText = 'Verifying Merkle root on Arbitrum Sepolia...';
+    }, 450);
+
+    setTimeout(() => {
+      bar.style.width = '100%';
+      document.getElementById('proof-hash-status').innerText = 'Quorum consensus achieved! (3/3 Signatures)';
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        wrap.classList.add('hidden');
+        bar.style.width = '0%';
+        closeProofModal();
+
+        // Increment rewards
+        const cur = roles[currentRoleKey];
+        cur.zeniTotal += 450;
+        if (cur.manaTarget > 0) {
+          cur.manaTotal = Math.min(cur.manaTarget, cur.manaTotal + 150);
+          cur.manaPct = Math.round((cur.manaTotal / cur.manaTarget) * 100);
+          document.getElementById('mana-gauge-pct').innerText = `${cur.manaPct}%`;
+          document.getElementById('mana-gauge-total').innerText = `${cur.manaTotal.toLocaleString()} / ${cur.manaTarget.toLocaleString()} XP`;
+        }
+        document.getElementById('zeni-gauge-total').innerText = `${cur.zeniTotal.toLocaleString()} ZENI Total`;
+
+        const checkIcon = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>`;
+
+        prependLedgerRow({
+          title: `PoW Verified: ${prUrl.split('/').slice(-2).join('/') || 'PR #88'}`,
+          subtitle: `Multisig verified on-chain • <span class="text-cyber-emerald font-mono font-medium">+450 ZENI, +150 MANA XP</span>`,
+          iconType: checkIcon,
+          iconBg: "bg-cyber-emerald/15",
+          iconColor: "text-cyber-emerald",
+          txType: "ZENI,MANA",
+          dateStr: "Just now",
+          tags: cur.avatarInitials
+        });
+
+        showToast("Proof Verified by Quorum! (+450 ZENI, +150 MANA XP credited)", "success");
+      }, 500);
+    }, 900);
+  }
+
+  // Functional Ledger Filter
+  function filterLedgerByType(type) {
+    const rows = document.querySelectorAll('#ledger-items-container .ledger-row');
+    rows.forEach(r => {
+      const rowTypes = (r.dataset.txType || '').split(',');
+      if (type === 'ALL' || rowTypes.includes(type)) {
+        r.style.display = 'flex';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  function filterLedgerSearch(term) {
+    const val = term.toLowerCase().trim();
+    const rows = document.querySelectorAll('#ledger-items-container .ledger-row');
+    rows.forEach(r => {
+      const text = r.innerText.toLowerCase();
+      if (!val || text.includes(val)) {
+        r.style.display = 'flex';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  // Initialize initial donut dimensions
+  document.addEventListener('DOMContentLoaded', () => {
+    switchRole('rohan');
+  });
+</script>
+<!-- END: Reactive Role & Simulator Logic -->
+</body></html>

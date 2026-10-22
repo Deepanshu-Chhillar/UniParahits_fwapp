@@ -1,0 +1,22 @@
+{
+  "name": "uniparahits-platform",
+  "version": "1.0.0",
+  "description": "UniParahits - Rank Up. Get Hired. The Elite Student Task Force (SIH 2026)",
+  "private": true,
+  "scripts": {
+    "clean-ports": "fuser -k 3000/tcp 8080/tcp 2>/dev/null || true; sleep 0.5",
+    "dev": "npm run clean-ports && concurrently -k -n \"BACKEND,FRONTEND\" -c \"magenta.bold,cyan.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:all": "npm run dev",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run clean-ports && concurrently -k -n \"BACKEND,FRONTEND\" -c \"magenta.bold,cyan.bold\" \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "npm run start --prefix backend",
+    "start:frontend": "npm run start --prefix frontend",
+    "start:all": "npm run start",
+    "type-check": "npm run type-check --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
