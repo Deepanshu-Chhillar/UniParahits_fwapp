@@ -191,4 +191,6 @@ curl -i http://localhost:8080/health
 ---
 
 ## 👥 Authors
+- **Coded by ME(The Best) and AI ofcourse
 - **Team UniParahits** — Smart India Hackathon (SIH 2026)
+  
