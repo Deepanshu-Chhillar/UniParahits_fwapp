@@ -441,3 +441,112 @@ export interface AuditLog {
   details: string;
   timestamp: string;
 }
+
+// ----------------------------------------------------------------------------
+// STRICT LEADERBOARD TYPES (STUDENTS, TEACHERS, GUILDS - NO CROSS-ROLE RANKINGS)
+// ----------------------------------------------------------------------------
+
+export type LeaderboardPeriod = 'weekly' | 'monthly' | 'all-time';
+
+export type LeaderboardCategory = 'students' | 'teachers' | 'guilds';
+
+export type ScoreActivityType =
+  | 'TASK_APPROVED'
+  | 'PROJECT_COMPLETED'
+  | 'ACHIEVEMENT_UNLOCKED'
+  | 'BATCH_TAUGHT'
+  | 'SESSION_DELIVERED'
+  | 'MENTORSHIP_REVIEW'
+  | 'COURSE_RATING';
+
+export interface LeaderboardScoreEvent {
+  id: string;
+  category: 'STUDENT' | 'TEACHER' | 'GUILD';
+  userId?: string;
+  guildId?: string;
+  activityType: ScoreActivityType;
+  referenceId: string;
+  points: number;
+  description: string;
+  verificationStatus: 'VERIFIED' | 'REVOKED' | 'PENDING';
+  verifiedBy?: string;
+  idempotencyKey: string;
+  timestamp: string;
+}
+
+export interface StudentLeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  avatar: string;
+  studentRank: RankCode;
+  college: string;
+  guildId?: string;
+  guildName?: string;
+  guildRole?: string;
+  score: number;
+  tasksCompleted: number;
+  projectsCompleted: number;
+  achievementsCount: number;
+  rankMovement?: number | null; // +1, -1, 0, or null if no historical comparison
+}
+
+export interface TeacherLeaderboardEntry {
+  rank: number;
+  teacherId: string;
+  name: string;
+  avatar: string;
+  teacherRank: RankCode;
+  headline?: string;
+  college: string;
+  guildName?: string;
+  score: number;
+  batchesTaught: number;
+  sessionsDelivered: number;
+  studentsMentored: number;
+  averageRating: number;
+  reviewsCount: number;
+  rankMovement?: number | null;
+}
+
+export interface GuildLeaderboardEntry {
+  rank: number;
+  guildId: string;
+  name: string;
+  logo: string;
+  tagline: string;
+  leaderName: string;
+  leaderRank: RankCode;
+  trustScore: number;
+  score: number;
+  contributingMembersCount: number;
+  totalMembersCount: number;
+  completedProjectsCount: number;
+  rankMovement?: number | null;
+}
+
+export interface UserLeaderboardPosition {
+  rank: number;
+  totalParticipants: number;
+  score: number;
+  period: LeaderboardPeriod;
+  category: LeaderboardCategory;
+  scoreToNextRank?: number;
+  aheadOfPercentage?: number;
+}
+
+export interface LeaderboardResponse<T> {
+  success: boolean;
+  category: LeaderboardCategory;
+  period: LeaderboardPeriod;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  totalCount: number;
+  page: number;
+  limit: number;
+  data: T[];
+  userPosition?: UserLeaderboardPosition | null;
+}
+

@@ -26,6 +26,9 @@ import {
   SubmissionType,
   GrowthPath,
   RankCode,
+  LeaderboardScoreEvent,
+  LeaderboardPeriod,
+  LeaderboardCategory,
 } from '../types';
 
 export function useUniStore() {
@@ -48,6 +51,7 @@ export function useUniStore() {
   const [mentorRelationships, setMentorRelationships] = useState<MentorRelationship[]>(() => store.getMentorRelationships());
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => store.getAuditLogs());
   const [allUsers, setAllUsers] = useState<User[]>(() => store.getAllUsers());
+  const [leaderboardEvents, setLeaderboardEvents] = useState<LeaderboardScoreEvent[]>(() => store.getLeaderboardEvents());
 
   const syncState = useCallback(() => {
     const user = store.getCurrentUser();
@@ -70,6 +74,7 @@ export function useUniStore() {
     setMentorRelationships([...store.getMentorRelationships()]);
     setAuditLogs([...store.getAuditLogs()]);
     setAllUsers([...store.getAllUsers()]);
+    setLeaderboardEvents([...store.getLeaderboardEvents()]);
   }, []);
 
   useEffect(() => {
@@ -99,6 +104,41 @@ export function useUniStore() {
     auditLogs,
     allUsers,
     users: allUsers,
+    leaderboardEvents,
+
+    // Leaderboard Methods
+    getStudentLeaderboard: (
+      period?: LeaderboardPeriod,
+      search?: string,
+      rankFilter?: string,
+      page?: number,
+      limit?: number,
+      currentUserId?: string
+    ) => store.getStudentLeaderboard(period, search, rankFilter, page, limit, currentUserId),
+
+    getTeacherLeaderboard: (
+      period?: LeaderboardPeriod,
+      search?: string,
+      page?: number,
+      limit?: number,
+      currentUserId?: string
+    ) => store.getTeacherLeaderboard(period, search, page, limit, currentUserId),
+
+    getGuildLeaderboard: (
+      period?: LeaderboardPeriod,
+      search?: string,
+      page?: number,
+      limit?: number
+    ) => store.getGuildLeaderboard(period, search, page, limit),
+
+    getUserLeaderboardPosition: (
+      userId: string,
+      category: 'students' | 'teachers',
+      period?: LeaderboardPeriod
+    ) => store.getUserLeaderboardPosition(userId, category, period),
+
+    recordLeaderboardScoreEvent: (data: any) => store.recordLeaderboardScoreEvent(data),
+    revokeLeaderboardScoreEvent: (id: string, revokedBy?: string) => store.revokeLeaderboardScoreEvent(id, revokedBy),
 
     // Store Actions
     switchUser: (userId: string) => store.setCurrentUserId(userId),

@@ -29,6 +29,14 @@ import {
   RankCode,
   GrowthPath,
   SubmissionType,
+  LeaderboardScoreEvent,
+  LeaderboardPeriod,
+  LeaderboardCategory,
+  StudentLeaderboardEntry,
+  TeacherLeaderboardEntry,
+  GuildLeaderboardEntry,
+  LeaderboardResponse,
+  UserLeaderboardPosition,
 } from '../types';
 
 import {
@@ -54,6 +62,7 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_ECONOMY_CONFIG,
   RANK_DEFINITIONS,
+  INITIAL_LEADERBOARD_EVENTS,
 } from './initialData';
 
 import {
@@ -88,6 +97,7 @@ interface AppDatabase {
   achievements: Achievement[];
   auditLogs: AuditLog[];
   economyConfig: EconomyConfig;
+  leaderboardEvents: LeaderboardScoreEvent[];
 }
 
 class StoreService {
@@ -109,6 +119,9 @@ class StoreService {
               parsed.users.unshift(UNIVERSAL_DEMO_USER);
               parsed.studentProfiles[UNIVERSAL_DEMO_USER.id] = UNIVERSAL_DEMO_STUDENT_PROFILE;
               parsed.companyProfiles[UNIVERSAL_DEMO_COMPANY_PROFILE.id] = UNIVERSAL_DEMO_COMPANY_PROFILE;
+            }
+            if (!parsed.leaderboardEvents || parsed.leaderboardEvents.length === 0) {
+              parsed.leaderboardEvents = [...INITIAL_LEADERBOARD_EVENTS];
             }
             return parsed;
           }
@@ -148,6 +161,7 @@ class StoreService {
       achievements: [...INITIAL_ACHIEVEMENTS],
       auditLogs: [...INITIAL_AUDIT_LOGS],
       economyConfig: { ...INITIAL_ECONOMY_CONFIG },
+      leaderboardEvents: [...INITIAL_LEADERBOARD_EVENTS],
     };
   }
 
@@ -426,6 +440,44 @@ class StoreService {
           'SUCCESS',
           '/student/tasks'
         );
+
+        // Record Verified Student Leaderboard Event (Anti-cheat: Idempotency check prevents duplicate points)
+        const taskDiffPoints = task.difficulty === 'ADVANCED' ? 350 : task.difficulty === 'INTERMEDIATE' ? 180 : 100;
+        const eligibleScore = taskDiffPoints + (task.manaReward || 0);
+
+        // Find student's guild if any
+        const studentGuild = this.db.guilds.find(
+          (g) => g.leaderId === sub.studentId || g.members?.some((m) => m.studentId === sub.studentId)
+        );
+
+        this.recordLeaderboardScoreEvent({
+          category: 'STUDENT',
+          userId: sub.studentId,
+          guildId: studentGuild?.id,
+          activityType: 'TASK_APPROVED',
+          referenceId: task.id,
+          points: eligibleScore,
+          description: `Verified task approval: ${task.title}`,
+          verificationStatus: 'VERIFIED',
+          verifiedBy: reviewer.id,
+          idempotencyKey: `evt_task_${task.id}_${sub.studentId}`,
+        });
+
+        // Record Guild Collective Contribution Event
+        if (studentGuild) {
+          this.recordLeaderboardScoreEvent({
+            category: 'GUILD',
+            userId: sub.studentId,
+            guildId: studentGuild.id,
+            activityType: 'TASK_APPROVED',
+            referenceId: task.id,
+            points: taskDiffPoints,
+            description: `Collective verified member contribution for task: ${task.title}`,
+            verificationStatus: 'VERIFIED',
+            verifiedBy: reviewer.id,
+            idempotencyKey: `evt_gld_task_${task.id}_${sub.studentId}`,
+          });
+        }
       }
 
       // Reward Mentor with MANA (+50 MANA for review work)
@@ -441,6 +493,19 @@ class StoreService {
           relatedEntityType: 'MENTORSHIP',
           relatedEntityId: sub.id,
           timestamp: new Date().toISOString(),
+        });
+
+        // Record verified Teacher/Mentor Leaderboard Event
+        this.recordLeaderboardScoreEvent({
+          category: 'TEACHER',
+          userId: reviewer.id,
+          activityType: 'MENTORSHIP_REVIEW',
+          referenceId: sub.id,
+          points: 75,
+          description: `Verified mentorship evaluation for ${sub.studentName}`,
+          verificationStatus: 'VERIFIED',
+          verifiedBy: reviewer.id,
+          idempotencyKey: `evt_mentor_review_${sub.id}_${reviewer.id}`,
         });
       }
     }
@@ -1432,6 +1497,578 @@ class StoreService {
     this.db.economyConfig = { ...this.db.economyConfig, ...config };
     this.addAuditLog('ECONOMY_CONFIG_UPDATED', this.db.currentUserId, 'Admin', 'Updated platform commission or capacity settings');
     this.persist();
+  }
+
+  // ----------------------------------------------------------------------------
+  // LEADERBOARD METHODS (STUDENTS | TEACHERS | GUILDS - STRICT SEPARATION)
+  // ----------------------------------------------------------------------------
+
+  public getLeaderboardEvents(): LeaderboardScoreEvent[] {
+    return this.db.leaderboardEvents || [];
+  }
+
+  public recordLeaderboardScoreEvent(
+    eventData: Omit<LeaderboardScoreEvent, 'id' | 'timestamp' | 'verificationStatus'> & {
+      id?: string;
+      timestamp?: string;
+      verificationStatus?: 'VERIFIED' | 'REVOKED' | 'PENDING';
+    }
+  ): { event: LeaderboardScoreEvent; alreadyProcessed: boolean } {
+    if (!this.db.leaderboardEvents) {
+      this.db.leaderboardEvents = [...INITIAL_LEADERBOARD_EVENTS];
+    }
+
+    // Anti-Cheat: Idempotency duplicate check
+    const existing = this.db.leaderboardEvents.find((e) => e.idempotencyKey === eventData.idempotencyKey);
+    if (existing) {
+      return { event: existing, alreadyProcessed: true };
+    }
+
+    const event: LeaderboardScoreEvent = {
+      id: eventData.id || `lbe-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      category: eventData.category,
+      userId: eventData.userId,
+      guildId: eventData.guildId,
+      activityType: eventData.activityType,
+      referenceId: eventData.referenceId,
+      points: Math.max(0, Number(eventData.points) || 0),
+      description: eventData.description,
+      verificationStatus: eventData.verificationStatus || 'VERIFIED',
+      verifiedBy: eventData.verifiedBy || this.db.currentUserId,
+      idempotencyKey: eventData.idempotencyKey,
+      timestamp: eventData.timestamp || new Date().toISOString(),
+    };
+
+    this.db.leaderboardEvents.unshift(event);
+    this.persist();
+    return { event, alreadyProcessed: false };
+  }
+
+  public revokeLeaderboardScoreEvent(eventId: string, revokedBy?: string) {
+    if (!this.db.leaderboardEvents) return;
+    const event = this.db.leaderboardEvents.find((e) => e.id === eventId);
+    if (!event) throw new Error(`Leaderboard event ${eventId} not found.`);
+
+    event.verificationStatus = 'REVOKED';
+    this.addAuditLog('LEADERBOARD_EVENT_REVOKED', revokedBy || this.db.currentUserId, 'Admin', `Revoked event ${eventId} (${event.points} pts)`);
+    this.persist();
+  }
+
+  private getPeriodDateRange(period: LeaderboardPeriod): { start: Date; end: Date } {
+    const now = new Date();
+    const end = new Date(now);
+
+    if (period === 'weekly') {
+      const day = now.getUTCDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday, 0, 0, 0, 0));
+      return { start, end };
+    }
+
+    if (period === 'monthly') {
+      const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+      return { start, end };
+    }
+
+    return { start: new Date(0), end };
+  }
+
+  private getPreviousPeriodDateRange(period: LeaderboardPeriod): { start: Date; end: Date } | null {
+    const now = new Date();
+
+    if (period === 'weekly') {
+      const day = now.getUTCDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const currentWeekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday, 0, 0, 0, 0));
+      const prevStart = new Date(currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const prevEnd = new Date(currentWeekStart.getTime() - 1);
+      return { start: prevStart, end: prevEnd };
+    }
+
+    if (period === 'monthly') {
+      const prevEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999));
+      const prevStart = new Date(Date.UTC(prevEnd.getUTCFullYear(), prevEnd.getUTCMonth(), 1, 0, 0, 0, 0));
+      return { start: prevStart, end: prevEnd };
+    }
+
+    return null;
+  }
+
+  public getStudentLeaderboard(
+    period: LeaderboardPeriod = 'all-time',
+    search: string = '',
+    rankFilter: string = 'ALL',
+    page: number = 1,
+    limit: number = 10,
+    currentUserId?: string
+  ): LeaderboardResponse<StudentLeaderboardEntry> {
+    const dateRange = this.getPeriodDateRange(period);
+    const events = (this.db.leaderboardEvents || []).filter((e) => {
+      if (e.category !== 'STUDENT' || e.verificationStatus !== 'VERIFIED') return false;
+      const t = new Date(e.timestamp).getTime();
+      return t >= dateRange.start.getTime() && t <= dateRange.end.getTime();
+    });
+
+    const eligibleStudents = this.db.users.filter(
+      (u) => u.role === 'STUDENT' || (u.capabilities && u.capabilities.includes('STUDENT'))
+    );
+
+    // Compute previous period ranks for genuine rank movement
+    const prevDateRange = this.getPreviousPeriodDateRange(period);
+    const prevRankMap = new Map<string, number>();
+    if (prevDateRange) {
+      const prevEvents = (this.db.leaderboardEvents || []).filter((e) => {
+        if (e.category !== 'STUDENT' || e.verificationStatus !== 'VERIFIED') return false;
+        const t = new Date(e.timestamp).getTime();
+        return t >= prevDateRange.start.getTime() && t <= prevDateRange.end.getTime();
+      });
+
+      const prevScores = eligibleStudents
+        .map((s) => {
+          const sEvents = prevEvents.filter((e) => e.userId === s.id);
+          const score = sEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+          return { userId: s.id, score };
+        })
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      prevScores.forEach((item, index) => {
+        prevRankMap.set(item.userId, index + 1);
+      });
+    }
+
+    const aggregated = eligibleStudents.map((student) => {
+      const sEvents = events.filter((e) => e.userId === student.id);
+      const score = sEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+
+      const tasksCompleted = sEvents.filter((e) => e.activityType === 'TASK_APPROVED').length;
+      const projectsCompleted = sEvents.filter((e) => e.activityType === 'PROJECT_COMPLETED').length;
+      const achievementsCount = sEvents.filter((e) => e.activityType === 'ACHIEVEMENT_UNLOCKED').length;
+
+      let guildId: string | undefined;
+      let guildName: string | undefined;
+      let guildRole: string | undefined;
+      for (const g of this.db.guilds) {
+        if (g.leaderId === student.id) {
+          guildId = g.id;
+          guildName = g.name;
+          guildRole = 'Leader';
+          break;
+        }
+        const m = g.members?.find((mem) => mem.studentId === student.id);
+        if (m) {
+          guildId = g.id;
+          guildName = g.name;
+          guildRole = m.role;
+          break;
+        }
+      }
+
+      const prevRank = prevRankMap.get(student.id);
+
+      return {
+        rank: 0,
+        userId: student.id,
+        name: student.name,
+        avatar: student.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+        studentRank: student.rank || 'E',
+        college: student.college || 'Engineering Institute',
+        guildId,
+        guildName,
+        guildRole,
+        score,
+        tasksCompleted,
+        projectsCompleted,
+        achievementsCount,
+        prevRank,
+      };
+    });
+
+    // Sort descending by score, tiebreak by tasksCompleted, then name
+    aggregated.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.tasksCompleted !== a.tasksCompleted) return b.tasksCompleted - a.tasksCompleted;
+      return a.name.localeCompare(b.name);
+    });
+
+    aggregated.forEach((item, index) => {
+      item.rank = index + 1;
+      if (item.prevRank !== undefined) {
+        (item as any).rankMovement = item.prevRank - item.rank;
+      } else {
+        (item as any).rankMovement = null;
+      }
+      delete (item as any).prevRank;
+    });
+
+    // Compute user position before search filtering
+    let userPosition: UserLeaderboardPosition | null = null;
+    const targetUserId = currentUserId || this.db.currentUserId;
+    if (targetUserId) {
+      const idx = aggregated.findIndex((s) => s.userId === targetUserId);
+      if (idx !== -1) {
+        const u = aggregated[idx];
+        const nextTarget = idx > 0 ? aggregated[idx - 1].score - u.score + 1 : 0;
+        userPosition = {
+          rank: u.rank,
+          totalParticipants: aggregated.length,
+          score: u.score,
+          period,
+          category: 'students',
+          scoreToNextRank: nextTarget > 0 ? nextTarget : 0,
+          aheadOfPercentage: Math.max(0, Math.round(((aggregated.length - u.rank) / aggregated.length) * 100)),
+        };
+      }
+    }
+
+    // Apply Filters
+    let filtered = aggregated;
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.college.toLowerCase().includes(q) ||
+          (s.guildName && s.guildName.toLowerCase().includes(q))
+      );
+    }
+
+    if (rankFilter && rankFilter !== 'ALL') {
+      filtered = filtered.filter((s) => s.studentRank === rankFilter);
+    }
+
+    const totalCount = filtered.length;
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 10));
+    const startIndex = (safePage - 1) * safeLimit;
+    const paginatedData = filtered.slice(startIndex, startIndex + safeLimit);
+
+    return {
+      success: true,
+      category: 'students',
+      period,
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString(),
+      },
+      totalCount,
+      page: safePage,
+      limit: safeLimit,
+      data: paginatedData,
+      userPosition,
+    };
+  }
+
+  public getTeacherLeaderboard(
+    period: LeaderboardPeriod = 'all-time',
+    search: string = '',
+    page: number = 1,
+    limit: number = 10,
+    currentUserId?: string
+  ): LeaderboardResponse<TeacherLeaderboardEntry> {
+    const dateRange = this.getPeriodDateRange(period);
+    const events = (this.db.leaderboardEvents || []).filter((e) => {
+      if (e.category !== 'TEACHER' || e.verificationStatus !== 'VERIFIED') return false;
+      const t = new Date(e.timestamp).getTime();
+      return t >= dateRange.start.getTime() && t <= dateRange.end.getTime();
+    });
+
+    const eligibleTeachers = this.db.users.filter((u) => {
+      const hasCapability = u.capabilities && u.capabilities.includes('TEACHER');
+      const hasCourses = this.db.courses.some((c) => c.teacherId === u.id);
+      return hasCapability || hasCourses;
+    });
+
+    const prevDateRange = this.getPreviousPeriodDateRange(period);
+    const prevRankMap = new Map<string, number>();
+    if (prevDateRange) {
+      const prevEvents = (this.db.leaderboardEvents || []).filter((e) => {
+        if (e.category !== 'TEACHER' || e.verificationStatus !== 'VERIFIED') return false;
+        const t = new Date(e.timestamp).getTime();
+        return t >= prevDateRange.start.getTime() && t <= prevDateRange.end.getTime();
+      });
+
+      const prevScores = eligibleTeachers
+        .map((t) => {
+          const tEvents = prevEvents.filter((e) => e.userId === t.id);
+          const score = tEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+          return { teacherId: t.id, score };
+        })
+        .filter((t) => t.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      prevScores.forEach((item, index) => {
+        prevRankMap.set(item.teacherId, index + 1);
+      });
+    }
+
+    const aggregated = eligibleTeachers.map((teacher) => {
+      const tEvents = events.filter((e) => e.userId === teacher.id);
+      const score = tEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+
+      const batchesTaught = tEvents.filter((e) => e.activityType === 'BATCH_TAUGHT').length;
+      const sessionsDelivered = tEvents.filter((e) => e.activityType === 'SESSION_DELIVERED').length;
+      const studentsMentored = tEvents.filter((e) => e.activityType === 'MENTORSHIP_REVIEW').length;
+
+      const teacherCourses = this.db.courses.filter((c) => c.teacherId === teacher.id);
+      let totalRating = 0;
+      let totalReviews = 0;
+      teacherCourses.forEach((c) => {
+        if (c.rating && c.reviewsCount) {
+          totalRating += Number(c.rating) * Number(c.reviewsCount);
+          totalReviews += Number(c.reviewsCount);
+        }
+      });
+      const averageRating = totalReviews > 0 ? Number((totalRating / totalReviews).toFixed(2)) : 0;
+
+      let guildName: string | undefined;
+      for (const g of this.db.guilds) {
+        if (g.leaderId === teacher.id || g.members?.some((m) => m.studentId === teacher.id)) {
+          guildName = g.name;
+          break;
+        }
+      }
+
+      const prevRank = prevRankMap.get(teacher.id);
+
+      return {
+        rank: 0,
+        teacherId: teacher.id,
+        name: teacher.name,
+        avatar: teacher.avatar || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150',
+        teacherRank: teacher.rank || 'D',
+        headline: teacher.headline || 'Course Instructor & Technical Mentor',
+        college: teacher.college || 'Engineering Institute',
+        guildName,
+        score,
+        batchesTaught,
+        sessionsDelivered,
+        studentsMentored,
+        averageRating,
+        reviewsCount: totalReviews,
+        prevRank,
+      };
+    });
+
+    aggregated.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.averageRating !== a.averageRating) return b.averageRating - a.averageRating;
+      if (b.reviewsCount !== a.reviewsCount) return b.reviewsCount - a.reviewsCount;
+      return a.name.localeCompare(b.name);
+    });
+
+    aggregated.forEach((item, index) => {
+      item.rank = index + 1;
+      if (item.prevRank !== undefined) {
+        (item as any).rankMovement = item.prevRank - item.rank;
+      } else {
+        (item as any).rankMovement = null;
+      }
+      delete (item as any).prevRank;
+    });
+
+    let userPosition: UserLeaderboardPosition | null = null;
+    const targetUserId = currentUserId || this.db.currentUserId;
+    if (targetUserId) {
+      const idx = aggregated.findIndex((t) => t.teacherId === targetUserId);
+      if (idx !== -1) {
+        const u = aggregated[idx];
+        const nextTarget = idx > 0 ? aggregated[idx - 1].score - u.score + 1 : 0;
+        userPosition = {
+          rank: u.rank,
+          totalParticipants: aggregated.length,
+          score: u.score,
+          period,
+          category: 'teachers',
+          scoreToNextRank: nextTarget > 0 ? nextTarget : 0,
+          aheadOfPercentage: Math.max(0, Math.round(((aggregated.length - u.rank) / aggregated.length) * 100)),
+        };
+      }
+    }
+
+    let filtered = aggregated;
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          t.college.toLowerCase().includes(q) ||
+          (t.headline && t.headline.toLowerCase().includes(q))
+      );
+    }
+
+    const totalCount = filtered.length;
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 10));
+    const startIndex = (safePage - 1) * safeLimit;
+    const paginatedData = filtered.slice(startIndex, startIndex + safeLimit);
+
+    return {
+      success: true,
+      category: 'teachers',
+      period,
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString(),
+      },
+      totalCount,
+      page: safePage,
+      limit: safeLimit,
+      data: paginatedData,
+      userPosition,
+    };
+  }
+
+  public getGuildLeaderboard(
+    period: LeaderboardPeriod = 'all-time',
+    search: string = '',
+    page: number = 1,
+    limit: number = 10
+  ): LeaderboardResponse<GuildLeaderboardEntry> {
+    const dateRange = this.getPeriodDateRange(period);
+    const periodEvents = (this.db.leaderboardEvents || []).filter((e) => {
+      if (e.category !== 'GUILD' || e.verificationStatus !== 'VERIFIED') return false;
+      const t = new Date(e.timestamp).getTime();
+      return t >= dateRange.start.getTime() && t <= dateRange.end.getTime();
+    });
+
+    const studentEvents = (this.db.leaderboardEvents || []).filter((e) => {
+      if (e.category !== 'STUDENT' || e.verificationStatus !== 'VERIFIED') return false;
+      const t = new Date(e.timestamp).getTime();
+      return t >= dateRange.start.getTime() && t <= dateRange.end.getTime();
+    });
+
+    const prevDateRange = this.getPreviousPeriodDateRange(period);
+    const prevRankMap = new Map<string, number>();
+    if (prevDateRange) {
+      const prevGuildEvents = (this.db.leaderboardEvents || []).filter((e) => {
+        if (e.category !== 'GUILD' || e.verificationStatus !== 'VERIFIED') return false;
+        const t = new Date(e.timestamp).getTime();
+        return t >= prevDateRange.start.getTime() && t <= prevDateRange.end.getTime();
+      });
+
+      const prevScores = this.db.guilds
+        .map((g) => {
+          const gEvents = prevGuildEvents.filter((e) => e.guildId === g.id);
+          const score = gEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+          return { guildId: g.id, score };
+        })
+        .filter((g) => g.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      prevScores.forEach((item, index) => {
+        prevRankMap.set(item.guildId, index + 1);
+      });
+    }
+
+    const aggregated = this.db.guilds.map((guild) => {
+      const directEvents = periodEvents.filter((e) => e.guildId === guild.id);
+      const directScore = directEvents.reduce((acc, e) => acc + (Number(e.points) || 0), 0);
+
+      const memberIds = new Set((guild.members || []).map((m) => m.studentId));
+      if (guild.leaderId) memberIds.add(guild.leaderId);
+
+      const contributingMemberIds = new Set<string>();
+      let memberScoreSum = 0;
+
+      directEvents.forEach((e) => {
+        if (e.userId && memberIds.has(e.userId)) {
+          contributingMemberIds.add(e.userId);
+        }
+      });
+
+      studentEvents.forEach((se) => {
+        if (se.guildId === guild.id && se.userId && memberIds.has(se.userId)) {
+          contributingMemberIds.add(se.userId);
+          if (!directEvents.some((de) => de.referenceId === se.referenceId && de.activityType === se.activityType)) {
+            memberScoreSum += Number(se.points) || 0;
+          }
+        }
+      });
+
+      const totalScore = directScore + memberScoreSum;
+      const completedProjectsCount =
+        directEvents.filter((e) => e.activityType === 'PROJECT_COMPLETED').length || guild.completedProjects || 0;
+
+      const prevRank = prevRankMap.get(guild.id);
+
+      return {
+        rank: 0,
+        guildId: guild.id,
+        name: guild.name,
+        logo: guild.logo || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=150',
+        tagline: guild.tagline || 'Collaborative Engineering Guild',
+        leaderName: guild.leaderName || 'Guild Master',
+        leaderRank: guild.leaderRank || 'C',
+        trustScore: guild.trustScore || 4.8,
+        score: totalScore,
+        contributingMembersCount: contributingMemberIds.size,
+        totalMembersCount: (guild.members || []).length || 1,
+        completedProjectsCount,
+        prevRank,
+      };
+    });
+
+    aggregated.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.completedProjectsCount !== a.completedProjectsCount) return b.completedProjectsCount - a.completedProjectsCount;
+      if (b.trustScore !== a.trustScore) return b.trustScore - a.trustScore;
+      return a.name.localeCompare(b.name);
+    });
+
+    aggregated.forEach((item, index) => {
+      item.rank = index + 1;
+      if (item.prevRank !== undefined) {
+        (item as any).rankMovement = item.prevRank - item.rank;
+      } else {
+        (item as any).rankMovement = null;
+      }
+      delete (item as any).prevRank;
+    });
+
+    let filtered = aggregated;
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (g) =>
+          g.name.toLowerCase().includes(q) ||
+          g.tagline.toLowerCase().includes(q) ||
+          g.leaderName.toLowerCase().includes(q)
+      );
+    }
+
+    const totalCount = filtered.length;
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 10));
+    const startIndex = (safePage - 1) * safeLimit;
+    const paginatedData = filtered.slice(startIndex, startIndex + safeLimit);
+
+    return {
+      success: true,
+      category: 'guilds',
+      period,
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString(),
+      },
+      totalCount,
+      page: safePage,
+      limit: safeLimit,
+      data: paginatedData,
+    };
+  }
+
+  public getUserLeaderboardPosition(
+    userId: string,
+    category: 'students' | 'teachers',
+    period: LeaderboardPeriod = 'all-time'
+  ): UserLeaderboardPosition | null {
+    if (category === 'teachers') {
+      const res = this.getTeacherLeaderboard(period, '', 1, 1000, userId);
+      return res.userPosition || null;
+    }
+    const res = this.getStudentLeaderboard(period, '', 'ALL', 1, 1000, userId);
+    return res.userPosition || null;
   }
 }
 

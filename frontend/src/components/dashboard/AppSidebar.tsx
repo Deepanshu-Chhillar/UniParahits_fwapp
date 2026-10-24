@@ -52,6 +52,7 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     { label: 'Courses Hub', href: '/student/courses', icon: GraduationCap },
     { label: 'Guild Hub', href: '/student/guild', icon: Shield },
     { label: 'Projects & Workspaces', href: '/student/projects', icon: FolderGit2 },
+    { label: 'Hall of Merit', href: '/student/leaderboard', icon: Trophy },
     { label: 'Wallet & Ledger', href: '/student/wallet', icon: Wallet },
   ];
 
@@ -60,6 +61,7 @@ export default function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
     { label: 'Teacher Dashboard', href: '/teacher/dashboard', icon: LayoutDashboard },
     { label: 'Manage Courses', href: '/teacher/courses', icon: GraduationCap },
     { label: 'Create New Course', href: '/teacher/courses/new', icon: PlusCircle },
+    { label: 'Hall of Merit', href: '/teacher/leaderboard', icon: Trophy },
     { label: 'Teacher Wallet', href: '/teacher/wallet', icon: Wallet },
     { label: 'Guild Hub', href: '/teacher/guild', icon: Shield },
     { label: 'Mentorship & Reviews', href: '/teacher/mentorship', icon: Users },

@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const { economyEngine, DEFAULT_CONFIG } = require('./services/economyService');
+const { leaderboardEngine, getPeriodDateRange } = require('./services/leaderboardService');
 const { authenticateToken, JWT_SECRET } = require('./middleware/auth');
 
 const app = express();
@@ -32,20 +33,41 @@ app.use(limiter);
 // ----------------------------------------------------------------------------
 const DB = {
   users: [
-    { id: 'user-universal-demo', email: 'demo@uniparahits.edu', name: 'Aarav Sharma (Universal Demo)', role: 'STUDENT', rank: 'C', capabilities: ['STUDENT', 'TEACHER', 'MENTOR', 'GUILD_LEADER', 'COMPANY', 'ADMIN'] },
-    { id: 'user-rohan-e', email: 'rohan.mehta@dtu.ac.in', name: 'Rohan Mehta', role: 'STUDENT', rank: 'E', capabilities: ['STUDENT'] },
-    { id: 'user-aarav-d', email: 'aarav.sharma@nsut.ac.in', name: 'Aarav Sharma', role: 'STUDENT', rank: 'D', capabilities: ['STUDENT', 'TEACHER'] },
-    { id: 'user-priya-c', email: 'priya.singh@iitd.ac.in', name: 'Priya Singh', role: 'STUDENT', rank: 'C', capabilities: ['STUDENT', 'TEACHER', 'MENTOR', 'GUILD_LEADER'] },
-    { id: 'user-novatech', email: 'hiring@novatechlabs.ai', name: 'NovaTech Labs', role: 'COMPANY', capabilities: ['COMPANY'] },
-    { id: 'user-admin', email: 'admin@uniparahits.gov.in', name: 'Director S. Roy', role: 'ADMIN', capabilities: ['ADMIN'] },
+    { id: 'user-universal-demo', email: 'demo@uniparahits.edu', name: 'Aarav Sharma (Universal Demo)', role: 'STUDENT', rank: 'C', college: 'NSUT Delhi', capabilities: ['STUDENT', 'TEACHER', 'MENTOR', 'GUILD_LEADER', 'COMPANY', 'ADMIN'], avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150' },
+    { id: 'user-rohan-e', email: 'rohan.mehta@dtu.ac.in', name: 'Rohan Mehta', role: 'STUDENT', rank: 'E', college: 'Delhi Technological University (DTU)', capabilities: ['STUDENT'], avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' },
+    { id: 'user-aarav-d', email: 'aarav.sharma@nsut.ac.in', name: 'Aarav Sharma', role: 'STUDENT', rank: 'D', college: 'Netaji Subhas University of Technology (NSUT)', capabilities: ['STUDENT', 'TEACHER'], avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150' },
+    { id: 'user-priya-c', email: 'priya.singh@iitd.ac.in', name: 'Priya Singh', role: 'STUDENT', rank: 'C', college: 'IIT Delhi', capabilities: ['STUDENT', 'TEACHER', 'MENTOR', 'GUILD_LEADER'], avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' },
+    { id: 'user-rahul-b', email: 'rahul.verma@iiitd.ac.in', name: 'Rahul Verma', role: 'STUDENT', rank: 'B', college: 'IIIT Delhi', capabilities: ['STUDENT', 'TEACHER', 'MENTOR', 'GUILD_LEADER'], avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+    { id: 'user-novatech', email: 'hiring@novatechlabs.ai', name: 'NovaTech Labs', role: 'COMPANY', capabilities: ['COMPANY'], avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150' },
+    { id: 'user-admin', email: 'admin@uniparahits.gov.in', name: 'Director S. Roy', role: 'ADMIN', capabilities: ['ADMIN'], avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
   ],
   wallets: {
     'user-universal-demo': { mana: 4500, zeni: 50000, trust: 4.85 },
     'user-rohan-e': { mana: 420, zeni: 2500, trust: 4.10 },
     'user-aarav-d': { mana: 1850, zeni: 12400, trust: 4.50 },
     'user-priya-c': { mana: 3400, zeni: 28500, trust: 4.80 },
+    'user-rahul-b': { mana: 4900, zeni: 45000, trust: 4.70 },
     'company-novatech': { zeni: 150000, trust: 4.90 },
   },
+  guilds: [
+    {
+      id: 'guild-cyberforge',
+      name: 'CyberForge',
+      logo: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=150&auto=format&fit=crop&q=80',
+      tagline: 'Full-Stack Rapid Deployment & High-Scale Cloud Squad',
+      leaderId: 'user-priya-c',
+      leaderName: 'Priya Singh',
+      leaderRank: 'C',
+      trustScore: 4.85,
+      completedProjects: 6,
+      members: [
+        { studentId: 'user-priya-c', studentName: 'Priya Singh', role: 'UI/UX Designer', sharePercentage: 20 },
+        { studentId: 'user-aarav-d', studentName: 'Aarav Sharma', role: 'Frontend Lead', sharePercentage: 30 },
+        { studentId: 'user-rahul-b', studentName: 'Rahul Verma', role: 'Backend Lead', sharePercentage: 30 },
+        { studentId: 'user-rohan-e', studentName: 'Rohan Mehta', role: 'Apprentice', sharePercentage: 20 },
+      ],
+    },
+  ],
   courses: [
     {
       id: 'course-web-dev',
@@ -114,6 +136,31 @@ const DB = {
   escrows: [],
   transactions: [],
   economyConfig: { ...DEFAULT_CONFIG },
+  leaderboardEvents: [
+    // Students Events
+    { id: 'lbe-std-1', category: 'STUDENT', userId: 'user-priya-c', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-5', points: 350, description: 'Verified QA Automation & Escrow Test Suite', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_task_task-5_user-priya-c', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-2', category: 'STUDENT', userId: 'user-rahul-b', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-3', points: 180, description: 'Verified Spring Boot JWT Rate Limiter Middleware', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_task_task-3_user-rahul-b', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-3', category: 'STUDENT', userId: 'user-aarav-d', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-4', points: 200, description: 'Verified PostgreSQL Course Schema with Constraints', verificationStatus: 'VERIFIED', verifiedBy: 'user-priya-c', idempotencyKey: 'evt_task_task-4_user-aarav-d', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-4', category: 'STUDENT', userId: 'user-rohan-e', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-2', points: 100, description: 'Verified Interactive Payment Split Breakdown Mockup', verificationStatus: 'VERIFIED', verifiedBy: 'user-priya-c', idempotencyKey: 'evt_task_sub-2_user-rohan-e', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-5', category: 'STUDENT', userId: 'user-rohan-e', guildId: 'guild-cyberforge', activityType: 'ACHIEVEMENT_UNLOCKED', referenceId: 'ach-1', points: 50, description: 'Verified First Proof of Work Badge', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_ach_ach-1_user-rohan-e', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-6', category: 'STUDENT', userId: 'user-priya-c', guildId: 'guild-cyberforge', activityType: 'PROJECT_COMPLETED', referenceId: 'proj-hiring-platform', points: 250, description: 'Delivered Milestone 1 Figma Tokens for NovaTech Platform', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_proj_m1_user-priya-c', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-7', category: 'STUDENT', userId: 'user-rahul-b', guildId: 'guild-cyberforge', activityType: 'PROJECT_COMPLETED', referenceId: 'proj-hiring-platform', points: 250, description: 'Delivered Microservices Architecture Specification', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_proj_m2_user-rahul-b', timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-std-8', category: 'STUDENT', userId: 'user-universal-demo', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-3', points: 180, description: 'Universal Demo Task Completion Verification', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_task_task-3_demo', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+
+    // Teachers Events
+    { id: 'lbe-tch-1', category: 'TEACHER', userId: 'user-aarav-d', guildId: null, activityType: 'BATCH_TAUGHT', referenceId: 'course-web-dev', points: 150, description: 'Delivered Full Stack Web Development cohort sessions', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_batch_course-web-dev_1', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-tch-2', category: 'TEACHER', userId: 'user-aarav-d', guildId: null, activityType: 'COURSE_RATING', referenceId: 'course-web-dev', points: 95, description: 'Verified Course Reviews (Rating 4.70/5.0 with 6 verified reviews)', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_rating_course-web-dev', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-tch-3', category: 'TEACHER', userId: 'user-priya-c', guildId: null, activityType: 'BATCH_TAUGHT', referenceId: 'course-applied-ai', points: 150, description: 'Conducted Applied AI & LLM Systems cohort sessions', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_batch_course-applied-ai_1', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-tch-4', category: 'TEACHER', userId: 'user-priya-c', guildId: null, activityType: 'MENTORSHIP_REVIEW', referenceId: 'mentor-rel-1', points: 120, description: 'Verified Active Mentorship & Evaluation for Rohan Mehta', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_mentor_eval_user-rohan-e', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-tch-5', category: 'TEACHER', userId: 'user-priya-c', guildId: null, activityType: 'COURSE_RATING', referenceId: 'course-applied-ai', points: 98, description: 'Verified Course Reviews (Rating 4.90/5.0 with 8 verified reviews)', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_rating_course-applied-ai', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+
+    // Guilds Events
+    { id: 'lbe-gld-1', category: 'GUILD', userId: null, guildId: 'guild-cyberforge', activityType: 'PROJECT_COMPLETED', referenceId: 'proj-hiring-platform', points: 300, description: 'Escrow milestone verified and delivered for NovaTech Labs', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_gld_proj_hiring-platform', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-gld-2', category: 'GUILD', userId: 'user-priya-c', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-5', points: 350, description: 'Collective verified member contribution by Priya Singh', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_gld_contrib_priya_t5', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-gld-3', category: 'GUILD', userId: 'user-rahul-b', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-3', points: 180, description: 'Collective verified member contribution by Rahul Verma', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_gld_contrib_rahul_t3', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-gld-4', category: 'GUILD', userId: 'user-aarav-d', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-4', points: 200, description: 'Collective verified member contribution by Aarav Sharma', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_gld_contrib_aarav_t4', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'lbe-gld-5', category: 'GUILD', userId: 'user-rohan-e', guildId: 'guild-cyberforge', activityType: 'TASK_APPROVED', referenceId: 'task-2', points: 100, description: 'Collective verified member contribution by Rohan Mehta', verificationStatus: 'VERIFIED', verifiedBy: 'user-admin', idempotencyKey: 'evt_gld_contrib_rohan_t2', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+  ],
 };
 
 // ----------------------------------------------------------------------------
@@ -230,6 +277,37 @@ app.post('/api/tasks/:id/review', (req, res) => {
       zeniAmount: task.zeniReward,
       reason: `Approved task: ${task.title}`,
       timestamp: new Date().toISOString(),
+    });
+
+    // Record verified student leaderboard event (Idempotent: prevents duplicate points)
+    const taskDifficultyPoints = task.difficulty === 'ADVANCED' ? 350 : task.difficulty === 'INTERMEDIATE' ? 180 : 100;
+    const eligiblePoints = taskDifficultyPoints + (task.manaReward || 0);
+
+    leaderboardEngine.recordEvent(DB.leaderboardEvents, {
+      category: 'STUDENT',
+      userId: studentId,
+      guildId: 'guild-cyberforge',
+      activityType: 'TASK_APPROVED',
+      referenceId: task.id,
+      points: eligiblePoints,
+      description: `Verified task approval: ${task.title}`,
+      verificationStatus: 'VERIFIED',
+      verifiedBy: req.user?.id || 'user-admin',
+      idempotencyKey: `evt_task_${task.id}_${studentId}`,
+    });
+
+    // Attribute collective verified contribution to Guild
+    leaderboardEngine.recordEvent(DB.leaderboardEvents, {
+      category: 'GUILD',
+      userId: studentId,
+      guildId: 'guild-cyberforge',
+      activityType: 'TASK_APPROVED',
+      referenceId: task.id,
+      points: taskDifficultyPoints,
+      description: `Collective verified member contribution for task: ${task.title}`,
+      verificationStatus: 'VERIFIED',
+      verifiedBy: req.user?.id || 'user-admin',
+      idempotencyKey: `evt_gld_task_${task.id}_${studentId}`,
     });
   }
 
@@ -429,6 +507,168 @@ app.get('/api/admin/metrics', (req, res) => {
     platformFeePct: DB.economyConfig.projectPlatformFeePct,
   });
 });
+
+// ----------------------------------------------------------------------------
+// 6. LEADERBOARD API (STUDENTS | TEACHERS | GUILDS - STRICT SEPARATION)
+// ----------------------------------------------------------------------------
+
+// 6.1 Students Leaderboard
+app.get('/api/leaderboard/students', (req, res) => {
+  const { period = 'all-time', search = '', rank = 'ALL', page = 1, limit = 10, userId } = req.query;
+
+  const currentUserId = userId || (req.headers['x-user-id'] || null);
+
+  const result = leaderboardEngine.getStudentLeaderboard({
+    users: DB.users,
+    events: DB.leaderboardEvents,
+    guilds: DB.guilds,
+    period,
+    search,
+    rankFilter: rank,
+    page,
+    limit,
+    currentUserId,
+  });
+
+  res.json(result);
+});
+
+// 6.2 Teachers Leaderboard
+app.get('/api/leaderboard/teachers', (req, res) => {
+  const { period = 'all-time', search = '', page = 1, limit = 10, userId } = req.query;
+
+  const currentUserId = userId || (req.headers['x-user-id'] || null);
+
+  const result = leaderboardEngine.getTeacherLeaderboard({
+    users: DB.users,
+    events: DB.leaderboardEvents,
+    courses: DB.courses,
+    guilds: DB.guilds,
+    period,
+    search,
+    page,
+    limit,
+    currentUserId,
+  });
+
+  res.json(result);
+});
+
+// 6.3 Guilds Leaderboard
+app.get('/api/leaderboard/guilds', (req, res) => {
+  const { period = 'all-time', search = '', page = 1, limit = 10 } = req.query;
+
+  const result = leaderboardEngine.getGuildLeaderboard({
+    guilds: DB.guilds,
+    events: DB.leaderboardEvents,
+    period,
+    search,
+    page,
+    limit,
+  });
+
+  res.json(result);
+});
+
+// 6.4 Current User Position
+app.get('/api/leaderboard/user-rank', (req, res) => {
+  const { userId, category = 'students', period = 'all-time' } = req.query;
+  const targetUserId = userId || req.headers['x-user-id'];
+
+  if (!targetUserId) {
+    return res.status(400).json({ success: false, error: 'userId parameter required' });
+  }
+
+  if (category === 'teachers') {
+    const teacherResult = leaderboardEngine.getTeacherLeaderboard({
+      users: DB.users,
+      events: DB.leaderboardEvents,
+      courses: DB.courses,
+      guilds: DB.guilds,
+      period,
+      page: 1,
+      limit: 1000,
+      currentUserId: targetUserId,
+    });
+    return res.json({ success: true, userPosition: teacherResult.userPosition || null });
+  }
+
+  const studentResult = leaderboardEngine.getStudentLeaderboard({
+    users: DB.users,
+    events: DB.leaderboardEvents,
+    guilds: DB.guilds,
+    period,
+    page: 1,
+    limit: 1000,
+    currentUserId: targetUserId,
+  });
+
+  res.json({ success: true, userPosition: studentResult.userPosition || null });
+});
+
+// 6.5 Record Score Event (Authorized System / Admin Operation)
+app.post('/api/leaderboard/events', (req, res) => {
+  const { category, userId, guildId, activityType, referenceId, points, description, idempotencyKey } = req.body;
+
+  if (!category || !activityType || !referenceId || !idempotencyKey) {
+    return res.status(400).json({ success: false, error: 'category, activityType, referenceId, and idempotencyKey are required.' });
+  }
+
+  try {
+    const outcome = leaderboardEngine.recordEvent(DB.leaderboardEvents, {
+      category,
+      userId,
+      guildId,
+      activityType,
+      referenceId,
+      points,
+      description,
+      idempotencyKey,
+      verifiedBy: req.headers['x-user-id'] || 'system',
+    });
+
+    res.status(outcome.alreadyProcessed ? 200 : 201).json({
+      success: true,
+      alreadyProcessed: outcome.alreadyProcessed,
+      event: outcome.event,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// 6.6 Revoke Score Event (Admin Audit & Correction)
+app.post('/api/leaderboard/events/:id/revoke', (req, res) => {
+  const eventId = req.params.id;
+  const revokedBy = req.headers['x-user-id'] || 'admin';
+
+  try {
+    const revoked = leaderboardEngine.revokeEvent(DB.leaderboardEvents, eventId, revokedBy);
+    res.json({ success: true, message: `Event ${eventId} revoked.`, event: revoked });
+  } catch (err) {
+    res.status(404).json({ success: false, error: err.message });
+  }
+});
+
+// 6.7 Admin Audit Event Log
+app.get('/api/leaderboard/admin/events', (req, res) => {
+  const { category, status, limit = 50 } = req.query;
+  let events = [...DB.leaderboardEvents];
+
+  if (category) {
+    events = events.filter((e) => e.category === category.toUpperCase());
+  }
+  if (status) {
+    events = events.filter((e) => e.verificationStatus === status.toUpperCase());
+  }
+
+  res.json({
+    success: true,
+    count: events.length,
+    events: events.slice(0, Number(limit) || 50),
+  });
+});
+
 
 // Start Server
 if (require.main === module) {
