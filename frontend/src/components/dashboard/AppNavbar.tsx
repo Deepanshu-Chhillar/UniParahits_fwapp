@@ -24,7 +24,8 @@ import {
   Wallet,
   CheckCircle2,
   Lock,
-  CheckCheck
+  CheckCheck,
+  Trophy
 } from 'lucide-react';
 
 export default function AppNavbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
@@ -163,6 +164,19 @@ export default function AppNavbar({ onToggleSidebar }: { onToggleSidebar?: () =>
                     Mentorship
                   </Link>
                 )}
+
+                {/* Leaderboard Link (Hall of Merit) */}
+                <Link
+                  href={currentPath.startsWith('/teacher') ? '/teacher/leaderboard' : '/student/leaderboard'}
+                  className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 font-medium ${
+                    currentPath.includes('/leaderboard')
+                      ? 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-500/40 shadow-sm'
+                      : 'text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground'
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  Hall of Merit
+                </Link>
               </>
             )}
 

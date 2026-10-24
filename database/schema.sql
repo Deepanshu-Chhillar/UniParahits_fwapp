@@ -357,3 +357,27 @@ CREATE INDEX idx_bounties_status ON bounties(status);
 CREATE INDEX idx_escrow_status ON escrow_vaults(status);
 CREATE INDEX idx_zeni_transactions_user ON zeni_transactions(user_id);
 CREATE INDEX idx_mana_transactions_user ON mana_transactions(user_id);
+
+-- ----------------------------------------------------------------------------
+-- 8. VERIFIED LEADERBOARD SCORE EVENTS & AUDIT LEDGER (FLOW 9)
+-- ----------------------------------------------------------------------------
+CREATE TABLE leaderboard_score_events (
+    id VARCHAR(64) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    category VARCHAR(32) NOT NULL CHECK (category IN ('STUDENT', 'TEACHER', 'GUILD')),
+    user_id VARCHAR(64) REFERENCES users(id) ON DELETE CASCADE,
+    guild_id VARCHAR(64) REFERENCES guilds(id) ON DELETE SET NULL,
+    activity_type VARCHAR(64) NOT NULL,
+    reference_id VARCHAR(64) NOT NULL,
+    points INT NOT NULL CHECK (points >= 0),
+    description TEXT NOT NULL,
+    verification_status VARCHAR(32) NOT NULL DEFAULT 'VERIFIED' CHECK (verification_status IN ('VERIFIED', 'REVOKED', 'PENDING')),
+    verified_by VARCHAR(64) REFERENCES users(id),
+    idempotency_key VARCHAR(128) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_leaderboard_events_cat_date ON leaderboard_score_events(category, created_at);
+CREATE INDEX idx_leaderboard_events_user ON leaderboard_score_events(user_id);
+CREATE INDEX idx_leaderboard_events_guild ON leaderboard_score_events(guild_id);
+CREATE INDEX idx_leaderboard_events_idempotency ON leaderboard_score_events(idempotency_key);
+

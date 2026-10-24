@@ -81,6 +81,7 @@ export default function WebappNavModal({ isOpen, onClose }: WebappNavModalProps)
     { label: 'Wallet & Ledger', href: '/student/wallet', icon: Wallet },
     { label: 'MANA XP Balance', href: '/wallet/mana', icon: Sparkles },
     { label: 'Classroom Doubt Chat', href: '/student/messages', icon: MessageSquare },
+    { label: 'Leaderboard (Hall of Merit)', href: '/student/leaderboard', icon: Trophy },
     { label: 'Rank Progression', href: '/student/rank', icon: Trophy },
     { label: 'Profile Settings', href: '/student/profile', icon: User },
   ];

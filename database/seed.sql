@@ -73,3 +73,32 @@ INSERT INTO economy_configs (id, project_platform_fee_pct, guild_payout_pct, cou
 VALUES
 ('primary', 15.00, 85.00, 15.00, 85.00, 10, 10, 500)
 ON CONFLICT (id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP;
+
+-- 9. VERIFIED LEADERBOARD SCORE EVENTS (STUDENTS, TEACHERS, GUILDS)
+INSERT INTO leaderboard_score_events (id, category, user_id, guild_id, activity_type, reference_id, points, description, verification_status, verified_by, idempotency_key, created_at)
+VALUES
+-- Students Leaderboard Events
+('lbe-std-1', 'STUDENT', 'user-priya-c', 'guild-cyberforge', 'TASK_APPROVED', 'task-5', 350, 'Verified QA Automation & Escrow Test Suite', 'VERIFIED', 'user-admin', 'evt_task_task-5_user-priya-c', '2026-10-22 14:00:00+00'),
+('lbe-std-2', 'STUDENT', 'user-rahul-b', 'guild-cyberforge', 'TASK_APPROVED', 'task-3', 180, 'Verified Spring Boot JWT Rate Limiter Middleware', 'VERIFIED', 'user-admin', 'evt_task_task-3_user-rahul-b', '2026-10-21 11:30:00+00'),
+('lbe-std-3', 'STUDENT', 'user-aarav-d', 'guild-cyberforge', 'TASK_APPROVED', 'task-4', 200, 'Verified PostgreSQL Course Schema with Constraints', 'VERIFIED', 'user-priya-c', 'evt_task_task-4_user-aarav-d', '2026-10-20 16:45:00+00'),
+('lbe-std-4', 'STUDENT', 'user-rohan-e', 'guild-cyberforge', 'TASK_APPROVED', 'task-2', 100, 'Verified Interactive Payment Split Breakdown Mockup', 'VERIFIED', 'user-priya-c', 'evt_task_sub-2_user-rohan-e', '2026-10-19 09:15:00+00'),
+('lbe-std-5', 'STUDENT', 'user-rohan-e', 'guild-cyberforge', 'ACHIEVEMENT_UNLOCKED', 'ach-1', 50, 'Verified First Proof of Work Badge', 'VERIFIED', 'user-admin', 'evt_ach_ach-1_user-rohan-e', '2026-10-18 10:00:00+00'),
+('lbe-std-6', 'STUDENT', 'user-priya-c', 'guild-cyberforge', 'PROJECT_COMPLETED', 'proj-hiring-platform', 250, 'Delivered Milestone 1 Figma Tokens for NovaTech Platform', 'VERIFIED', 'user-admin', 'evt_proj_m1_user-priya-c', '2026-10-15 15:00:00+00'),
+('lbe-std-7', 'STUDENT', 'user-rahul-b', 'guild-cyberforge', 'PROJECT_COMPLETED', 'proj-hiring-platform', 250, 'Delivered Microservices Architecture Specification', 'VERIFIED', 'user-admin', 'evt_proj_m2_user-rahul-b', '2026-10-14 18:00:00+00'),
+('lbe-std-8', 'STUDENT', 'user-universal-demo', 'guild-cyberforge', 'TASK_APPROVED', 'task-3', 180, 'Universal Demo Task Completion Verification', 'VERIFIED', 'user-admin', 'evt_task_task-3_demo', '2026-10-23 10:00:00+00'),
+
+-- Teachers Leaderboard Events
+('lbe-tch-1', 'TEACHER', 'user-aarav-d', NULL, 'BATCH_TAUGHT', 'course-web-dev', 150, 'Delivered Full Stack Web Development cohort sessions', 'VERIFIED', 'user-admin', 'evt_batch_course-web-dev_1', '2026-10-21 18:00:00+00'),
+('lbe-tch-2', 'TEACHER', 'user-aarav-d', NULL, 'COURSE_RATING', 'course-web-dev', 95, 'Verified Course Reviews (Rating 4.70/5.0 with 6 verified reviews)', 'VERIFIED', 'user-admin', 'evt_rating_course-web-dev', '2026-10-22 12:00:00+00'),
+('lbe-tch-3', 'TEACHER', 'user-priya-c', NULL, 'BATCH_TAUGHT', 'course-applied-ai', 150, 'Conducted Applied AI & LLM Systems cohort sessions', 'VERIFIED', 'user-admin', 'evt_batch_course-applied-ai_1', '2026-10-20 19:00:00+00'),
+('lbe-tch-4', 'TEACHER', 'user-priya-c', NULL, 'MENTORSHIP_REVIEW', 'mentor-rel-1', 120, 'Verified Active Mentorship & Evaluation for Rohan Mehta', 'VERIFIED', 'user-admin', 'evt_mentor_eval_user-rohan-e', '2026-10-23 09:30:00+00'),
+('lbe-tch-5', 'TEACHER', 'user-priya-c', NULL, 'COURSE_RATING', 'course-applied-ai', 98, 'Verified Course Reviews (Rating 4.90/5.0 with 8 verified reviews)', 'VERIFIED', 'user-admin', 'evt_rating_course-applied-ai', '2026-10-22 17:00:00+00'),
+
+-- Guilds Leaderboard Events
+('lbe-gld-1', 'GUILD', NULL, 'guild-cyberforge', 'PROJECT_COMPLETED', 'proj-hiring-platform', 300, 'Escrow milestone verified and delivered for NovaTech Labs', 'VERIFIED', 'user-admin', 'evt_gld_proj_hiring-platform', '2026-10-21 16:00:00+00'),
+('lbe-gld-2', 'GUILD', NULL, 'guild-cyberforge', 'TASK_APPROVED', 'task-5', 350, 'Collective verified member contribution by Priya Singh', 'VERIFIED', 'user-admin', 'evt_gld_contrib_priya_t5', '2026-10-22 14:00:00+00'),
+('lbe-gld-3', 'GUILD', NULL, 'guild-cyberforge', 'TASK_APPROVED', 'task-3', 180, 'Collective verified member contribution by Rahul Verma', 'VERIFIED', 'user-admin', 'evt_gld_contrib_rahul_t3', '2026-10-21 11:30:00+00'),
+('lbe-gld-4', 'GUILD', NULL, 'guild-cyberforge', 'TASK_APPROVED', 'task-4', 200, 'Collective verified member contribution by Aarav Sharma', 'VERIFIED', 'user-admin', 'evt_gld_contrib_aarav_t4', '2026-10-20 16:45:00+00'),
+('lbe-gld-5', 'GUILD', NULL, 'guild-cyberforge', 'TASK_APPROVED', 'task-2', 100, 'Collective verified member contribution by Rohan Mehta', 'VERIFIED', 'user-admin', 'evt_gld_contrib_rohan_t2', '2026-10-19 09:15:00+00')
+ON CONFLICT (idempotency_key) DO NOTHING;
+
